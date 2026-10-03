@@ -29,11 +29,10 @@ rich_datas, rich_binaries, rich_hidden = collect_all("rich")
 typer_datas, typer_binaries, typer_hidden = collect_all("typer")
 
 # LiteLLM: Surgical harvest of core completions & providers
-# Exclude the 50MB `litellm.proxy` Next.js frontend and enterprise proxy daemon
+# Retains Python submodules while omitting tests and benchmarks
 litellm_submodules = [
     mod for mod in collect_submodules("litellm")
-    if not mod.startswith("litellm.proxy")
-    and "test" not in mod
+    if "test" not in mod
     and "benchmark" not in mod
 ]
 
@@ -89,13 +88,7 @@ hiddenimports = (
 # --- 2. Comprehensive Dead-Weight Exclusions ---
 
 excludes = [
-    # LiteLLM proxy and web UI dependencies
-    "litellm.proxy",
-    "litellm.proxy._experimental",
-    "litellm.proxy.hooks",
-    "litellm.proxy.management_endpoints",
-    "litellm.proxy.ui_crud_endpoints",
-    "litellm.proxy.proxy_server",
+    # LiteLLM heavy web proxy servers & ASGI runtimes
     "fastapi",
     "starlette",
     "uvicorn",
