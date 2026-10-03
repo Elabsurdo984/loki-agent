@@ -26,7 +26,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **ENG-01** | Route Hanging via Invalid `continue_()` Post-`fetch()` | `src/loki/engine/api_chaos.py` | 🔴 **Critical** | ✅ **Resolved** |
 | **SEC-03** | Sensitive Credential & PII Leak in HAR Response Bodies | `src/loki/engine/scrubber.py` | 🟠 **High** | ✅ **Resolved** |
 | **REP-02** | False-Positive "Crash Reproduced" on Internal Script Errors in `repro_test.py` | `src/loki/engine/replayer.py` | 🟠 **High** | ✅ **Resolved** |
-| **CHA-01** | Persistent Offline Network Leak on Unhandled Exceptions | `src/loki/personas/network_tormentor.py` | 🟠 **High** | Open |
+| **CHA-01** | Persistent Offline Network Leak on Unhandled Exceptions | `src/loki/personas/network_tormentor.py` | 🟠 **High** | ✅ **Resolved** |
 | **SEC-02** | Arbitrary File Read / Directory Traversal in Source File Resolution | `src/loki/engine/healer.py` | 🟠 **High** | Open |
 | **REP-01** | Unhandled `TypeError` / `AttributeError` on Null or String Status | `src/loki/engine/html_reporter.py` | 🟠 **High** | ✅ **Resolved (PR #12)** |
 | **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | ✅ **Resolved (PR #15)** |
@@ -107,7 +107,8 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### CHA-01: Persistent Offline Network Leak on Unhandled Exceptions
-- **File**: `src/loki/personas/network_tormentor.py` (lines 160–168)
+- **File**: `src/loki/personas/network_tormentor.py` (lines 160–175, 215–225)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
 - **Description**: In `NetworkTormentorPersona.attack()`, the persona disconnects the network via `page.context.set_offline(True)`. If an exception occurs while offline (e.g., Playwright `TargetClosedError`, element detachment, or navigation timeout), execution jumps straight to the `except Exception as e:` block and calls `continue` without restoring network connectivity. As a result, the remainder of the session (and subsequent Swarm personas) executes in a permanently offline state.
 - **Remediation**:
   Ensure the network is reset in the exception handler:

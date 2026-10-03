@@ -164,12 +164,25 @@ class NetworkTormentorPersona(BasePersona):
 
                 except Exception as e:
                     self.log_action(f"Network assault cycle encountered: {str(e)[:40]}")
-                    page.wait_for_timeout(500)
+                    try:
+                        self._reset_network(page)
+                    except Exception:
+                        pass
+                    try:
+                        page.wait_for_timeout(500)
+                    except Exception:
+                        pass
 
         finally:
             # Cleanup: Ensure routes are detached and network restored to normal
-            self.api_chaos.detach()
-            self._reset_network(page)
+            try:
+                self.api_chaos.detach()
+            except Exception:
+                pass
+            try:
+                self._reset_network(page)
+            except Exception:
+                pass
             self.log_action("Finished NetworkTormentor assault session")
 
     def attack_step(self, page: Page, step: dict):
@@ -202,8 +215,11 @@ class NetworkTormentorPersona(BasePersona):
             except Exception as e:
                 self.log_action(f"Error during journey step attack: {e}")
                 try:
-                    page.context.set_offline(False)
+                    self._reset_network(page)
                 except Exception:
                     pass
             finally:
-                self.api_chaos.detach()
+                try:
+                    self.api_chaos.detach()
+                except Exception:
+                    pass
