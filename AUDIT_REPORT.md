@@ -32,7 +32,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | ✅ **Resolved (PR #15)** |
 | **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved (PR #11)** |
 | **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | ✅ **Resolved** |
-| **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | Open |
+| **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | Partial (PID validation resolved via PR #13) |
 | **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | Open |
 | **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | Open |
@@ -197,10 +197,11 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### CLI-01: Chat REPL Termination on `SystemExit` / `typer.Exit`
-- **File**: `src/loki/ai/chat.py` (lines 295–302)
-- **Description**: In `_run_cli_action()`, the command dispatcher wraps invocations in `try ... except Exception as e:`. However, `SystemExit` (and `typer.Exit`) inherit directly from `BaseException`, not `Exception`. When commands such as `/run --ci` or validation checks call `sys.exit()` or raise `typer.Exit`, the interactive REPL catches nothing and abruptly terminates the entire user session.
+- **File**: `src/loki/ai/chat.py` (lines 287–313)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
+- **Description**: In `_run_cli_action()`, the command dispatcher previously caught only `typer.Exit` and `Exception`. However, `SystemExit` inherits directly from `BaseException`, not `Exception`. When commands such as `/run --ci` or validation checks called `sys.exit()` (or subroutines exited with non-zero status), the interactive REPL caught nothing and abruptly terminated the entire user session.
 - **Remediation**:
-  Explicitly catch `(SystemExit, typer.Exit)` to preserve interactive REPL lifecycle.
+  Explicitly catch `(typer.Exit, SystemExit)` in `_run_cli_action()`, accurately extracting integer or string exit status and messages without killing the chat REPL. Verified with unit tests in `tests/test_chat.py` (`test_run_cli_action_catches_system_exit`, `test_chat_repl_survives_cli_action_system_exit`).
 
 ---
 

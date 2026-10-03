@@ -288,14 +288,26 @@ class LokiChatSession:
         """Invokes a `loki` CLI command function directly — bypassing Click/Typer's own
         argument parsing — so /run, /fix, and /report drive the exact same code path as
         the standalone CLI commands, instead of a separate reimplementation. A command
-        function's own `typer.Exit(code=...)` is treated as a normal, expected ending
-        (it's how e.g. the --ci gate signals pass/fail), not an error; anything else
-        unexpected is reported without killing the chat session."""
+        function's own `typer.Exit(code=...)` or `SystemExit(code=...)` is treated as a
+        normal, expected ending (it's how e.g. the --ci gate signals pass/fail), not an
+        error; anything else unexpected is reported without killing the chat session."""
         try:
             fn(**kwargs)
-        except typer.Exit as e:
-            if e.exit_code not in (0, None):
-                self.console.print(f"[dim]({description} finished with exit code {e.exit_code})[/dim]")
+        except (typer.Exit, SystemExit) as e:
+            code = getattr(e, "exit_code", None)
+            msg = None
+            if code is None:
+                raw = getattr(e, "code", None)
+                if raw is None:
+                    code = 0
+                elif isinstance(raw, int):
+                    code = raw
+                else:
+                    code = 1
+                    msg = str(raw)
+            if code not in (0, None):
+                suffix = f": {msg}" if msg else ""
+                self.console.print(f"[dim]({description} finished with exit code {code}{suffix})[/dim]")
         except Exception as e:
             self.console.print(f"[bold red]Error running {description}:[/bold red] {e}")
 
