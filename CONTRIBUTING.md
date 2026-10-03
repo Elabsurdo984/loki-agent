@@ -4,11 +4,14 @@ Thanks for considering a contribution. LOKI is a one-person side project, so out
 
 This file covers the practical side of contributing. For the full architectural picture (why things are built the way they are, the subagents, the skills), see [`AGENTS.md`](./AGENTS.md) — it's written for AI coding agents but is just as useful for a human getting oriented.
 
-## Before you start
+## How to Contribute — PRs Are Always Welcome!
 
-LOKI is a **standalone CLI application**, not a library meant to be `import`ed by other projects. Keep that in mind when deciding where new code belongs.
+LOKI is open-source and evolves rapidly. **You do NOT need to wait for or open an issue before submitting a Pull Request.**
 
-Not sure what to work on? Check the issues labeled [`good first issue`](https://github.com/Elabsurdo984/loki-agent/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — they're scoped to be self-contained, with file/line pointers and acceptance criteria already written out. For anything bigger, open an issue first describing what you want to change before investing time in a PR, so we can agree on the approach.
+- **Have a feature, improvement, or idea?** Go right ahead and open a PR! We welcome proactive implementations, new chaos personas, extra tooling, performance optimizations, or architecture enhancements.
+- **Found a bug?** Submit a PR directly with the fix and a test, or open an issue if you want to report it first.
+- **Looking for something to pick up?** Check the issues labeled [`good first issue`](https://github.com/Elabsurdo984/loki-agent/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) — they're scoped and self-contained with pointers and acceptance criteria.
+- **Architectural context**: LOKI is a **standalone CLI application**, not an importable library. Keep new code focused on the CLI, engine, personas, and safety layers.
 
 ## Setting up a dev environment
 
@@ -61,7 +64,8 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `feat: ...`
 - [ ] If you touched the sandbox, personas, or the healer: run it against a real local target (`playground/index.html` works well) and confirm nothing crashes.
 - [ ] If you touched the AI brain: confirm it still degrades gracefully with no API key configured (you should see a `SKIPPED`/local-diagnosis fallback, not a crash).
 - [ ] No `.loki/runs/`, `*.loki.bak` backup files, or stray `.loki/models.json` test artifacts staged in git (`git status` before committing).
-- [ ] If there's a test suite by the time you read this (see the `good first issue` about setting up `pytest`), run it.
+- [ ] Run the full test suite with `python -m pytest` (all unit and integration tests must pass cleanly).
+- [ ] If adding new features or fixing bugs, include corresponding unit test coverage in `tests/`.
 
 ## Reporting bugs
 
