@@ -795,5 +795,8 @@ Project & Testing Context:
                         reported_error = True
                         break
 
-            if not success and not reported_error:
-                self.console.print("\n[bold red]AI Error:[/bold red] Service currently experiencing high demand. Please try again in a moment.")
+            if not success:
+                if self.history and self.history[-1].get("role") == "user":
+                    self.history.pop()
+                if not reported_error:
+                    self.console.print("\n[bold red]AI Error:[/bold red] Service currently experiencing high demand. Please try again in a moment.")
