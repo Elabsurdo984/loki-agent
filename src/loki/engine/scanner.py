@@ -21,6 +21,13 @@ class ProjectScanner:
             "Rust": ["Cargo.toml"],
             "Go": ["go.mod"],
             "Web / Static HTML": ["index.html"],
+            "Docker / Container": [
+                "Dockerfile",
+                "docker-compose.yml",
+                "docker-compose.yaml",
+                "compose.yml",
+                "compose.yaml",
+            ],
         }
         for language, files in stack_signatures.items():
             for filename in files:
