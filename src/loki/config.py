@@ -71,7 +71,11 @@ def get_active_model_profile() -> dict[str, Any] | None:
 
 
 def add_model_profile(
-    name: str, model: str, api_base: str | None = None, api_key_env: str | None = None
+    name: str,
+    model: str,
+    api_base: str | None = None,
+    api_key_env: str | None = None,
+    api_key: str | None = None,
 ) -> dict[str, Any]:
     """Adds (or updates) a named profile and returns it. Does not activate it."""
     registry = load_models_registry()
@@ -80,6 +84,8 @@ def add_model_profile(
         profile["api_base"] = api_base
     if api_key_env:
         profile["api_key_env"] = api_key_env
+    if api_key:
+        profile["api_key"] = api_key
     name_lower = name.lower()
     registry["profiles"] = [
         p for p in registry.get("profiles", []) if str(p.get("name", "")).lower() != name_lower
@@ -196,7 +202,9 @@ def resolve_ai_connection(explicit_model: str | None = None) -> dict[str, Any]:
         kwargs: dict[str, Any] = {"model": active["model"]}
         if active.get("api_base"):
             kwargs["api_base"] = active["api_base"]
-        if active.get("api_key_env"):
+        if active.get("api_key"):
+            kwargs["api_key"] = active["api_key"]
+        elif active.get("api_key_env"):
             api_key = os.environ.get(active["api_key_env"])
             if api_key:
                 kwargs["api_key"] = api_key
@@ -209,9 +217,10 @@ def resolve_ai_connection(explicit_model: str | None = None) -> dict[str, Any]:
     if api_base:
         kwargs["api_base"] = api_base
 
-    api_key_env = ai.get("api_key_env")
-    if api_key_env:
-        api_key = os.environ.get(api_key_env)
+    if ai.get("api_key"):
+        kwargs["api_key"] = ai["api_key"]
+    elif ai.get("api_key_env"):
+        api_key = os.environ.get(ai["api_key_env"])
         if api_key:
             kwargs["api_key"] = api_key
 

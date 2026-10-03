@@ -223,7 +223,7 @@ class LokiChatSession:
 
         if sub == "add":
             if len(parts) < 3:
-                self.console.print("[yellow]Usage: /model add <name> <model-id> [api_base=<url>] [api_key_env=<VAR>][/yellow]")
+                self.console.print("[yellow]Usage: /model add <name> <model-id> [api_key=<KEY>] [api_base=<url>] [api_key_env=<VAR>][/yellow]")
                 return
             name, model_id = parts[1], parts[2]
             if name.lower() in reserved:
@@ -232,13 +232,15 @@ class LokiChatSession:
                     f"used as a profile name — you'd never be able to switch back to it by name. Pick another.[/yellow]"
                 )
                 return
-            api_base, api_key_env = None, None
+            api_base, api_key_env, api_key = None, None, None
             for token in parts[3:]:
                 if token.startswith("api_base="):
                     api_base = token.split("=", 1)[1]
                 elif token.startswith("api_key_env="):
                     api_key_env = token.split("=", 1)[1]
-            add_model_profile(name, model_id, api_base=api_base, api_key_env=api_key_env)
+                elif token.startswith("api_key="):
+                    api_key = token.split("=", 1)[1]
+            add_model_profile(name, model_id, api_base=api_base, api_key_env=api_key_env, api_key=api_key)
             activate_model_profile(name)
             self._explicit_model = None
             self.model = resolve_model(None)
