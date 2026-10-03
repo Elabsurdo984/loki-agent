@@ -1,5 +1,6 @@
 from enum import Enum
 from pathlib import Path
+import random
 import sys
 import typer
 import json
@@ -463,6 +464,11 @@ def run(
         "-b",
         help="Browser engine to run the chaos attack in (chromium, firefox, webkit)",
     ),
+    seed: int | None = typer.Option(
+        None,
+        "--seed",
+        help="Seed for pseudo-random number generators to achieve deterministic chaos behavior",
+    ),
 ):
     """Execute a monitored chaos attack on a target URL to sniff for crashes and errors."""
     is_ci_mode = ci or strict or CIGate.is_ci_environment()
@@ -512,17 +518,21 @@ def run(
         auth_chaos=auth_chaos,
     )
 
+    # Resolve deterministic random seed
+    resolved_seed = seed if seed is not None else random.randint(100000, 999999)
+    random.seed(resolved_seed)
+
     active_persona = None
     if swarm or persona in [PersonaChoice.SWARM, PersonaChoice.ALL]:
-        active_persona = SwarmPersona(click_burst_count=burst_count, api_chaos_config=api_chaos_config)
+        active_persona = SwarmPersona(click_burst_count=burst_count, api_chaos_config=api_chaos_config, seed=resolved_seed)
     elif persona == PersonaChoice.RAGE_CLICKER:
-        active_persona = RageClickerPersona(click_burst_count=burst_count)
+        active_persona = RageClickerPersona(click_burst_count=burst_count, seed=resolved_seed)
     elif persona == PersonaChoice.NOVICE_CHAOTIC:
-        active_persona = NoviceChaoticPersona()
+        active_persona = NoviceChaoticPersona(seed=resolved_seed)
     elif persona == PersonaChoice.NETWORK_TORMENTOR:
-        active_persona = NetworkTormentorPersona(api_chaos_config=api_chaos_config)
+        active_persona = NetworkTormentorPersona(api_chaos_config=api_chaos_config, seed=resolved_seed)
     elif persona == PersonaChoice.ADVERSARY:
-        active_persona = AdversaryPersona()
+        active_persona = AdversaryPersona(seed=resolved_seed)
 
     if active_persona and active_persona.name == "Swarm":
         persona_label = "Swarm 🐝 [dim](NoviceChaotic, Adversary, NetworkTormentor, RageClicker)[/dim]"
@@ -531,6 +541,7 @@ def run(
 
     console.print(f"[bold cyan]⚡ Target URL:[/bold cyan] {resolved_url}")
     console.print(f"[bold cyan]🌐 Browser Engine:[/bold cyan] {browser.value.capitalize()}")
+    console.print(f"[bold cyan]🎲 Random Seed:[/bold cyan] {resolved_seed}")
     if journey_data:
         console.print(f"[bold blue]🗺️ Guided Journey:[/bold blue] {journey_data.get('name')} ({journey_data.get('total_steps')} steps)")
     console.print(f"[bold magenta]🎭 Active Persona:[/bold magenta] {persona_label}")
@@ -546,6 +557,7 @@ def run(
     sandbox = ChaosSandbox(
         headless=target_config.get("headless", True) and not headed,
         browser_name=browser.value,
+        seed=resolved_seed,
     )
 
     if concurrency > 1:

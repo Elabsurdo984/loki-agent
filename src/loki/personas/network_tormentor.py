@@ -1,5 +1,4 @@
 import time
-import random
 from typing import Any
 from playwright.sync_api import Page
 from loki.personas.base import BasePersona
@@ -13,12 +12,13 @@ class NetworkTormentorPersona(BasePersona):
     (5xx errors, corrupted JSON, dropped keys, surgical latency).
     """
 
-    def __init__(self, api_chaos_config: ApiChaosConfig | None = None):
+    def __init__(self, api_chaos_config: ApiChaosConfig | None = None, seed: int | None = None):
         super().__init__(
             name="NetworkTormentor",
             description="Injects high network latency, sudden connection loss, and semantic API fault corruption to expose UI hangs.",
+            seed=seed,
         )
-        self.api_chaos = ApiChaosEngine(api_chaos_config or ApiChaosConfig())
+        self.api_chaos = ApiChaosEngine(api_chaos_config or ApiChaosConfig(), seed=seed)
 
     def get_api_faults(self) -> list[dict[str, Any]]:
         """Returns mock route definitions for all API faults injected during the run."""
@@ -86,7 +86,7 @@ class NetworkTormentorPersona(BasePersona):
                     valid_buttons = [b for b in buttons if b.is_enabled()]
 
                     if valid_buttons:
-                        target_btn = random.choice(valid_buttons)
+                        target_btn = self.rng.choice(valid_buttons)
                         btn_text = (target_btn.text_content() or "Action Button").strip()[:30]
                         selector = self.resilient_selector(target_btn)
                         mode = step % 4

@@ -13,6 +13,7 @@ class IncidentReport:
     target_url: str
     persona_name: str | None = None
     browser_name: str = "chromium"
+    seed: int | None = None
     device_name: str | None = None
     device_requested: str | None = None
     orientation: str = "portrait"
@@ -157,13 +158,14 @@ def resolve_device(
 class ChaosSandbox:
     """Manages an isolated browser session with live error sniffing and video capture."""
 
-    def __init__(self, output_dir: str = ".loki/runs", headless: bool = True, browser_name: str = "chromium"):
+    def __init__(self, output_dir: str = ".loki/runs", headless: bool = True, browser_name: str = "chromium", seed: int | None = None):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.headless = headless
         self.browser_name = (browser_name or "chromium").lower().strip()
         if self.browser_name not in ("chromium", "firefox", "webkit"):
             self.browser_name = "chromium"
+        self.seed = seed
 
     def _sniff_mobile_layout(self, page: Page) -> list[str]:
         """Sniffs for mobile responsiveness issues such as horizontal scroll overflows and missing viewport meta tags."""
@@ -259,11 +261,13 @@ class ChaosSandbox:
         orientation: str = "portrait",
     ) -> IncidentReport:
         """Launches the target URL, applies chaotic attacks, and records evidence."""
+        effective_seed = self.seed if self.seed is not None else (getattr(persona, "seed", None) if persona else None)
         report = IncidentReport(
             target_url=target_url,
             persona_name=persona.name if persona else None,
             orientation=orientation,
             browser_name=self.browser_name,
+            seed=effective_seed,
         )
         start_time = time.time()
         temp_har_file = self.output_dir / f"temp_network_{int(start_time)}.har"
@@ -636,6 +640,7 @@ class ChaosSandbox:
             orientation=orientation,
             concurrency=concurrency,
             browser_name=self.browser_name,
+            seed=self.seed,
         )
         start_time = time.time()
 

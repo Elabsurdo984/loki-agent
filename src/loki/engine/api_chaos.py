@@ -85,7 +85,7 @@ class ApiFaultEvent:
         }
 
 
-def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
+def mutate_json_payload(data: Any, monster_len: int = 5000, rng: random.Random | None = None) -> Any:
     """
     Recursively and semantically corrupts a JSON data structure:
     - Mutates numbers to NaN/huge numbers or None
@@ -93,12 +93,13 @@ def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
     - Inverts booleans
     - Empties arrays or injects null elements
     """
+    _rng = rng or random
     if isinstance(data, dict):
         if not data:
             return {"_corrupted_by_loki": True}
         mutated = {}
         for k, v in data.items():
-            roll = random.random()
+            roll = _rng.random()
             if roll < 0.20:
                 # Replace with None
                 mutated[k] = None
@@ -118,7 +119,7 @@ def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
                     mutated[k] = None
             elif roll < 0.60:
                 # Recursive descent
-                mutated[k] = mutate_json_payload(v, monster_len)
+                mutated[k] = mutate_json_payload(v, monster_len, rng=_rng)
             else:
                 # Keep original value
                 mutated[k] = v
@@ -127,21 +128,21 @@ def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
     elif isinstance(data, list):
         if not data:
             return [{"_corrupted_item": True}]
-        roll = random.random()
+        roll = _rng.random()
         if roll < 0.35:
             # Empty list
             return []
         elif roll < 0.70:
             # Nullify elements
-            return [None if random.random() < 0.5 else mutate_json_payload(x, monster_len) for x in data]
+            return [None if _rng.random() < 0.5 else mutate_json_payload(x, monster_len, rng=_rng) for x in data]
         else:
-            return [mutate_json_payload(x, monster_len) for x in data]
+            return [mutate_json_payload(x, monster_len, rng=_rng) for x in data]
 
     elif isinstance(data, (int, float)):
-        return -999999 if random.random() < 0.5 else None
+        return -999999 if _rng.random() < 0.5 else None
 
     elif isinstance(data, str):
-        return "M" * min(monster_len, 1000) if random.random() < 0.5 else None
+        return "M" * min(monster_len, 1000) if _rng.random() < 0.5 else None
 
     elif isinstance(data, bool):
         return not data
@@ -149,18 +150,19 @@ def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
     return None
 
 
-def strip_schema_keys(data: Any) -> tuple[Any, list[str]]:
+def strip_schema_keys(data: Any, rng: random.Random | None = None) -> tuple[Any, list[str]]:
     """
     Strips top-level or critical keys from JSON to expose missing optional chaining (?.),
     returning the modified data and the list of stripped keys.
     """
+    _rng = rng or random
     if isinstance(data, dict):
         if not data:
             return {}, []
         keys = list(data.keys())
         # Pick 1 to 3 keys to drop
         drop_count = max(1, min(len(keys), 2))
-        keys_to_drop = random.sample(keys, drop_count)
+        keys_to_drop = _rng.sample(keys, drop_count)
         stripped = {k: v for k, v in data.items() if k not in keys_to_drop}
         return stripped, keys_to_drop
     elif isinstance(data, list):
@@ -174,8 +176,10 @@ class ApiChaosEngine:
     to inject semantic API faults, payload corruption, and latency spikes.
     """
 
-    def __init__(self, config: ApiChaosConfig | None = None):
+    def __init__(self, config: ApiChaosConfig | None = None, seed: int | None = None):
         self.config = config or ApiChaosConfig()
+        self.seed = seed
+        self.rng = random.Random(seed)
         self.injected_faults: list[ApiFaultEvent] = []
         self._attached_targets: set[Page | BrowserContext] = set()
 
@@ -250,9 +254,9 @@ class ApiChaosEngine:
 
             # Auth & Session Chaos interception:
             if self.config.auth_chaos_enabled and self.has_auth_credentials(request):
-                if random.random() < self.config.auth_fault_rate:
+                if self.rng.random() < self.config.auth_fault_rate:
                     auth_fault = (
-                        random.choice(self.config.auth_fault_types)
+                        self.rng.choice(self.config.auth_fault_types)
                         if self.config.auth_fault_types
                         else "token_invalidation"
                     )
@@ -270,12 +274,12 @@ class ApiChaosEngine:
                         return
 
             # Random roll against general fault_rate
-            if random.random() > self.config.fault_rate:
+            if self.rng.random() > self.config.fault_rate:
                 route.continue_()
                 return
 
             # Choose general fault type
-            fault_type = random.choice(self.config.fault_types) if self.config.fault_types else "status_code"
+            fault_type = self.rng.choice(self.config.fault_types) if self.config.fault_types else "status_code"
 
             if fault_type == "status_code":
                 self._inject_status_code(route, request)
@@ -299,7 +303,7 @@ class ApiChaosEngine:
 
     def _inject_status_code(self, route: Route, request: Request) -> None:
         """Injects a 5xx HTTP server or gateway error."""
-        status = random.choice(self.config.status_codes)
+        status = self.rng.choice(self.config.status_codes)
         error_payload = {
             "error": "LOKI Synthetic Fault Injection",
             "message": f"Simulated HTTP {status} fault injected by LOKI Ghost in the Wire",
@@ -338,7 +342,7 @@ class ApiChaosEngine:
                 route.fulfill(response=response)
                 return
 
-            corrupted_data = mutate_json_payload(parsed_json, self.config.monster_string_len)
+            corrupted_data = mutate_json_payload(parsed_json, self.config.monster_string_len, rng=self.rng)
             corrupted_bytes = json.dumps(corrupted_data).encode("utf-8")
 
             event = ApiFaultEvent(
@@ -376,7 +380,7 @@ class ApiChaosEngine:
     def _inject_delay(self, route: Route, request: Request) -> None:
         """Injects targeted artificial latency into an individual API endpoint."""
         min_ms, max_ms = self.config.delay_range_ms
-        delay_ms = random.randint(min_ms, max_ms)
+        delay_ms = self.rng.randint(min_ms, max_ms)
         time.sleep(delay_ms / 1000.0)
 
         event = ApiFaultEvent(
@@ -435,7 +439,7 @@ class ApiChaosEngine:
                 route.fulfill(response=response)
                 return
 
-            stripped_data, dropped_keys = strip_schema_keys(parsed_json)
+            stripped_data, dropped_keys = strip_schema_keys(parsed_json, rng=self.rng)
             stripped_bytes = json.dumps(stripped_data).encode("utf-8")
 
             event = ApiFaultEvent(

@@ -1,5 +1,4 @@
 import time
-import random
 from typing import Any
 from playwright.sync_api import Page
 from loki.engine.api_chaos import ApiChaosConfig
@@ -19,15 +18,21 @@ class SwarmPersona(BasePersona):
     - RageClicker: High-frequency concurrent click bursts and race condition probes.
     """
 
-    def __init__(self, click_burst_count: int = 5, api_chaos_config: ApiChaosConfig | None = None):
+    def __init__(self, click_burst_count: int = 5, api_chaos_config: ApiChaosConfig | None = None, seed: int | None = None):
         super().__init__(
             name="Swarm",
             description="Coordinates all chaos personas in multi-vector assault waves against the target application.",
+            seed=seed,
         )
-        self.novice = NoviceChaoticPersona()
-        self.adversary = AdversaryPersona()
-        self.network = NetworkTormentorPersona(api_chaos_config=api_chaos_config)
-        self.rage = RageClickerPersona(click_burst_count=click_burst_count)
+        novice_seed = self.rng.randint(0, 2**31 - 1) if seed is not None else None
+        adversary_seed = self.rng.randint(0, 2**31 - 1) if seed is not None else None
+        network_seed = self.rng.randint(0, 2**31 - 1) if seed is not None else None
+        rage_seed = self.rng.randint(0, 2**31 - 1) if seed is not None else None
+
+        self.novice = NoviceChaoticPersona(seed=novice_seed)
+        self.adversary = AdversaryPersona(seed=adversary_seed)
+        self.network = NetworkTormentorPersona(api_chaos_config=api_chaos_config, seed=network_seed)
+        self.rage = RageClickerPersona(click_burst_count=click_burst_count, seed=rage_seed)
         self.sub_personas = [self.novice, self.adversary, self.network, self.rage]
 
     def get_api_faults(self) -> list[dict[str, Any]]:
@@ -110,7 +115,7 @@ class SwarmPersona(BasePersona):
 
         if event_type in ["input", "change"]:
             # Alternate between Novice boundary fuzzing and Adversary exploit payload
-            if random.random() < 0.5:
+            if self.rng.random() < 0.5:
                 self.novice.attack_step(page, step)
                 self._sync_logs(self.novice)
             else:

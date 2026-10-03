@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 from typing import Any
 from playwright.sync_api import ElementHandle, Page
@@ -29,9 +30,11 @@ _RESILIENT_SELECTOR_SCRIPT = """
 class BasePersona(ABC):
     """Abstract base class for all synthetic chaos personas."""
 
-    def __init__(self, name: str, description: str):
+    def __init__(self, name: str, description: str, seed: int | None = None):
         self.name = name
         self.description = description
+        self.seed = seed
+        self.rng = random.Random(seed)
         self.actions_log: list[str] = []
         # Structured, replayable trace of concrete page interactions this persona
         # performed (clicks, fills, network toggles...). Consumed by IncidentReporter

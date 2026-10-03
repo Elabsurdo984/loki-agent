@@ -1,5 +1,4 @@
 import time
-import random
 from playwright.sync_api import Page
 from loki.personas.base import BasePersona
 
@@ -42,10 +41,11 @@ class AdversaryPersona(BasePersona):
     # login's email or username field (type="email" is also checked separately).
     _AUTH_FIELD_HINTS = ("email", "user", "login", "signin")
 
-    def __init__(self):
+    def __init__(self, seed: int | None = None):
         super().__init__(
             name="Adversary",
             description="Bypasses client-side disabled guards, tampers with hidden fields, and injects adversarial security payloads.",
+            seed=seed,
         )
 
     def _looks_like_auth_field(self, element) -> bool:
@@ -197,11 +197,11 @@ class AdversaryPersona(BasePersona):
                 if inputs:
                     auth_candidates = [el for el in inputs if self._looks_like_auth_field(el)]
                     if auth_candidates:
-                        target_input = random.choice(auth_candidates)
-                        payload = random.choice(self.AUTH_BYPASS_PAYLOADS)
+                        target_input = self.rng.choice(auth_candidates)
+                        payload = self.rng.choice(self.AUTH_BYPASS_PAYLOADS)
                     else:
-                        target_input = random.choice(inputs)
-                        payload = random.choice(self.ADVERSARIAL_PAYLOADS)
+                        target_input = self.rng.choice(inputs)
+                        payload = self.rng.choice(self.ADVERSARIAL_PAYLOADS)
                     input_id = target_input.get_attribute("id") or target_input.get_attribute("name") or "field"
 
                     self.log_action(f"Adversarial probe on '{input_id}' with payload: {payload[:35]}...")
@@ -217,7 +217,7 @@ class AdversaryPersona(BasePersona):
                 # Vector 4: Forcibly click action buttons even if application tried to lock them
                 buttons = page.query_selector_all("button:visible, input[type='submit']:visible")
                 if buttons:
-                    target_btn = random.choice(buttons)
+                    target_btn = self.rng.choice(buttons)
                     btn_text = (target_btn.text_content() or "Submit").strip()[:30]
                     self.log_action(f"Adversarial force-click on '{btn_text}'")
                     selector = self.resilient_selector(target_btn)
@@ -245,7 +245,7 @@ class AdversaryPersona(BasePersona):
             except Exception:
                 el = None
             is_auth_field = el is not None and self._looks_like_auth_field(el)
-            payload = random.choice(self.AUTH_BYPASS_PAYLOADS) if is_auth_field else random.choice(self.ADVERSARIAL_PAYLOADS)
+            payload = self.rng.choice(self.AUTH_BYPASS_PAYLOADS) if is_auth_field else self.rng.choice(self.ADVERSARIAL_PAYLOADS)
             self.log_action(f"Adversary: Mutating journey input '{target_name}' with payload: {payload[:30]}...")
             try:
                 if el:

@@ -168,6 +168,17 @@ class HTMLReporter:
             </div>
             """
 
+        # Seed stat card
+        seed_val = data.get("seed")
+        seed_stat_card = ""
+        if seed_val is not None:
+            seed_stat_card = f"""
+            <div class="stat-card">
+                <div class="stat-label">Random Seed</div>
+                <div class="stat-value" style="font-family: monospace;">🎲 {html.escape(str(seed_val))}</div>
+            </div>
+            """
+
         # API Chaos stat card
         api_faults = data.get("api_faults", [])
         api_stat_card = ""
@@ -647,6 +658,7 @@ class HTMLReporter:
             {failures_stat_card}
             {browser_stat_card}
             {device_stat_card}
+            {seed_stat_card}
             {api_stat_card}
             <div class="stat-card">
                 <div class="stat-label">Session Duration</div>

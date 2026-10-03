@@ -1,4 +1,3 @@
-import random
 import time
 from playwright.sync_api import Page
 from loki.personas.base import BasePersona
@@ -23,15 +22,16 @@ class NoviceChaoticPersona(BasePersona):
 
     ERRATIC_KEYS: list[str] = ["Escape", "Enter", "Tab", "Backspace"]
 
-    def __init__(self):
+    def __init__(self, seed: int | None = None):
         super().__init__(
             name="NoviceChaotic",
             description="Fuzzes input forms with extreme boundary payloads, emojis, and erratic keyboard behaviors.",
+            seed=seed,
         )
 
     def get_random_payload(self) -> str:
         """Selects a pseudo-random chaotic payload."""
-        return random.choice(self.CHAOTIC_PAYLOADS)
+        return self.rng.choice(self.CHAOTIC_PAYLOADS)
 
     def attack(self, page: Page, duration: int):
         """Scans for form inputs and interactive elements, fuzzing them chaotically."""
@@ -58,7 +58,7 @@ class NoviceChaoticPersona(BasePersona):
                         input_elem.fill(payload, timeout=500)
 
                         # Erratic keypress
-                        key = random.choice(self.ERRATIC_KEYS)
+                        key = self.rng.choice(self.ERRATIC_KEYS)
                         input_elem.press(key)
                         if selector:
                             self.record_step("fill", selector=selector, value=payload)
@@ -109,7 +109,7 @@ class NoviceChaoticPersona(BasePersona):
                 if elem:
                     payload = self.get_random_payload()
                     self.log_action(f"Mutating recorded input on '{selector}' with chaos payload: {payload[:25]}...")
-                    key = random.choice(self.ERRATIC_KEYS)
+                    key = self.rng.choice(self.ERRATIC_KEYS)
                     elem.fill(payload, timeout=500)
                     elem.press(key)
                     self.record_step("fill", selector=selector, value=payload)

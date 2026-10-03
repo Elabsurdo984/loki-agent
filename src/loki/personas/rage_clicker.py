@@ -6,10 +6,11 @@ from loki.personas.base import BasePersona
 class RageClickerPersona(BasePersona):
     """Simulates an impatient, aggressive user executing rapid burst clicks."""
 
-    def __init__(self, click_burst_count: int = 5, click_delay: float = 0.05):
+    def __init__(self, click_burst_count: int = 5, click_delay: float = 0.05, seed: int | None = None):
         super().__init__(
             name="RageClicker",
             description="Fires rapid consecutive clicks on action elements to trigger race conditions.",
+            seed=seed,
         )
         self.click_burst_count = click_burst_count
         self.click_delay = click_delay

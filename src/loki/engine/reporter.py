@@ -50,6 +50,7 @@ class IncidentReporter:
             "target_url": report.target_url,
             "persona": report.persona_name,
             "browser": report.browser_name,
+            "seed": report.seed,
             "device": report.device_name,
             "orientation": report.orientation,
             "duration_seconds": report.duration_seconds,
@@ -137,9 +138,11 @@ Target: {report.target_url}
 Persona: {report.persona_name}
 Browser: {browser_engine.capitalize()}
 Device: {report.device_name or 'Desktop'} ({report.orientation})
+Seed: {report.seed}
 """
 
 import json
+import random
 import sys
 
 # Ensure UTF-8 output encoding across Windows and POSIX
@@ -209,6 +212,7 @@ def replay_trace(page, trace):
 
 
 def test_reproduce_crash():
+    random.seed({repr(report.seed)})
     print("⚡ [LOKI REPRO] Starting deterministic crash verification...")
     detected_errors = []
 
@@ -302,8 +306,10 @@ Target: {report.target_url}
 Concurrency: {report.concurrency} synchronized lanes
 Browser: {browser_engine.capitalize()}
 Device: {report.device_name or 'Desktop'} ({report.orientation})
+Seed: {report.seed}
 """
 
+import random
 import sys
 import threading
 

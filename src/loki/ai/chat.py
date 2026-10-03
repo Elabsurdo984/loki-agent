@@ -327,7 +327,7 @@ class LokiChatSession:
             rules=True, report_html=True, open_report=False, ci=False,
             strict=False, auto_heal=False, device=None, orientation="portrait",
             concurrency=1, target_selector=None, authorized=False,
-            api_chaos=None, fault_rate=None, auth_chaos=None,
+            api_chaos=None, fault_rate=None, auth_chaos=None, seed=None,
         )
 
         i = 0
@@ -425,6 +425,15 @@ class LokiChatSession:
                 kwargs["auth_chaos"] = True
             elif low == "--no-auth-chaos":
                 kwargs["auth_chaos"] = False
+            elif low == "--seed":
+                v = _next_value()
+                if v is None:
+                    return
+                try:
+                    kwargs["seed"] = int(v)
+                except ValueError:
+                    self.console.print(f"[yellow]--seed expects an integer, got '{v}'[/yellow]")
+                    return
             elif low in ("-b", "--browser"):
                 v = _next_value()
                 if v is None:

@@ -39,6 +39,8 @@ class CIGate:
         ]
         if report.device_name:
             lines.append(f"| **Emulated Device** | 📱 `{report.device_name} ({report.orientation})` |")
+        if report.seed is not None:
+            lines.append(f"| **Random Seed** | 🎲 `{report.seed}` |")
         lines.extend([
             f"| **Duration** | `{report.duration_seconds}s` |",
             f"| **Failures Detected** | `{report.total_failures_count}` |",
