@@ -60,7 +60,17 @@ def _read_tracked_workers() -> List[int]:
     if not _STRESS_WORKERS_TRACKING_PATH.exists():
         return []
     try:
-        return json.loads(_STRESS_WORKERS_TRACKING_PATH.read_text(encoding="utf-8"))
+        data = json.loads(_STRESS_WORKERS_TRACKING_PATH.read_text(encoding="utf-8"))
+        if not isinstance(data, list):
+            return []
+        return [
+            int(p)
+            for p in data
+            if isinstance(p, (int, str))
+            and not isinstance(p, bool)
+            and str(p).isdigit()
+            and int(p) > 0
+        ]
     except Exception:
         return []
 
