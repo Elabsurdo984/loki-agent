@@ -12,11 +12,13 @@ Reaching a *remote* host's infrastructure (SSH, a remote Docker context, a cloud
 API) is a different, far more sensitive capability and is explicitly out of
 scope here; see AGENTS.md before ever adding that.
 """
+import contextlib
 import json
 import os
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -40,20 +42,80 @@ _PROTECTED_NAMES = {
 # Task Manager "End task" — not just a clean Ctrl+C) can be reconciled afterward
 # with `loki infra cleanup` instead of leaving them silently burning CPU/memory.
 _STRESS_WORKERS_TRACKING_PATH = Path(".loki/infra_stress_workers.json")
+_WORKER_TRACKING_THREAD_LOCK = threading.Lock()
+
+
+@contextlib.contextmanager
+def _tracking_lock(timeout: float = 5.0):
+    """Advisory file lock + thread lock to serialize read-modify-write access
+    to the stress workers tracking file across concurrent processes and threads."""
+    lock_path = _STRESS_WORKERS_TRACKING_PATH.with_suffix(".lock")
+    try:
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    with _WORKER_TRACKING_THREAD_LOCK:
+        start_time = time.time()
+        f = None
+        try:
+            f = open(lock_path, "a+b")
+            while True:
+                try:
+                    if os.name == "nt":
+                        import msvcrt
+                        f.seek(0)
+                        msvcrt.locking(f.fileno(), msvcrt.LK_NBLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(f.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except (BlockingIOError, OSError, PermissionError):
+                    if time.time() - start_time >= timeout:
+                        break
+                    time.sleep(0.05)
+            yield
+        finally:
+            if f is not None:
+                try:
+                    if os.name == "nt":
+                        import msvcrt
+                        f.seek(0)
+                        msvcrt.locking(f.fileno(), msvcrt.LK_UNLCK, 1)
+                    else:
+                        import fcntl
+                        fcntl.flock(f.fileno(), fcntl.LOCK_UN)
+                except Exception:
+                    pass
+                try:
+                    f.close()
+                except Exception:
+                    pass
 
 
 def _track_workers(pids: List[int]) -> None:
-    _STRESS_WORKERS_TRACKING_PATH.parent.mkdir(parents=True, exist_ok=True)
-    existing = _read_tracked_workers()
-    _STRESS_WORKERS_TRACKING_PATH.write_text(json.dumps(sorted(set(existing) | set(pids))), encoding="utf-8")
+    if not pids:
+        return
+    with _tracking_lock():
+        _STRESS_WORKERS_TRACKING_PATH.parent.mkdir(parents=True, exist_ok=True)
+        existing = _read_tracked_workers()
+        new_pids = sorted(set(existing) | set(pids))
+        temp_path = _STRESS_WORKERS_TRACKING_PATH.with_suffix(".tmp")
+        temp_path.write_text(json.dumps(new_pids), encoding="utf-8")
+        temp_path.replace(_STRESS_WORKERS_TRACKING_PATH)
 
 
 def _untrack_workers(pids: List[int]) -> None:
-    remaining = [p for p in _read_tracked_workers() if p not in set(pids)]
-    if remaining:
-        _STRESS_WORKERS_TRACKING_PATH.write_text(json.dumps(remaining), encoding="utf-8")
-    else:
-        _STRESS_WORKERS_TRACKING_PATH.unlink(missing_ok=True)
+    if not pids:
+        return
+    with _tracking_lock():
+        remaining = [p for p in _read_tracked_workers() if p not in set(pids)]
+        if remaining:
+            temp_path = _STRESS_WORKERS_TRACKING_PATH.with_suffix(".tmp")
+            temp_path.write_text(json.dumps(remaining), encoding="utf-8")
+            temp_path.replace(_STRESS_WORKERS_TRACKING_PATH)
+        else:
+            _STRESS_WORKERS_TRACKING_PATH.unlink(missing_ok=True)
 
 
 def _read_tracked_workers() -> List[int]:
@@ -80,18 +142,19 @@ def cleanup_stress_workers() -> "tuple[List[int], List[int]]":
     (the parent `loki infra cpu-stress`/`memory-stress` process got killed from
     the outside before its own `finally` cleanup could run). Safe to call anytime
     — PIDs that are already gone are just dropped from the tracking file."""
-    tracked = _read_tracked_workers()
-    killed, already_gone = [], []
-    for pid in tracked:
-        try:
-            psutil.Process(pid).kill()
-            killed.append(pid)
-        except psutil.NoSuchProcess:
-            already_gone.append(pid)
-        except psutil.AccessDenied:
-            pass
-    _STRESS_WORKERS_TRACKING_PATH.unlink(missing_ok=True)
-    return killed, already_gone
+    with _tracking_lock():
+        tracked = _read_tracked_workers()
+        killed, already_gone = [], []
+        for pid in tracked:
+            try:
+                psutil.Process(pid).kill()
+                killed.append(pid)
+            except psutil.NoSuchProcess:
+                already_gone.append(pid)
+            except psutil.AccessDenied:
+                pass
+        _STRESS_WORKERS_TRACKING_PATH.unlink(missing_ok=True)
+        return killed, already_gone
 
 
 @dataclass

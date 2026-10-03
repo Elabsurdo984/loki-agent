@@ -33,7 +33,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved (PR #11)** |
 | **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved** |
-| **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | Partial (PID validation resolved via PR #13) |
+| **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | Open |
 | **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | Open |
 
@@ -206,12 +206,15 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### INF-01: TOCTOU Race Condition & Untyped Worker PID Parsing
-- **File**: `src/loki/engine/infra_chaos.py` (lines 45–65)
+- **File**: `src/loki/engine/infra_chaos.py` (lines 45–95)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
 - **Description**:
-  1. Worker tracking in `_track_workers()` uses a non-atomic read-modify-write pattern on `.loki/infra_stress_workers.json`. Concurrent runs risk dropping PIDs, leaving orphaned burner processes.
-  2. `_read_tracked_workers()` parses JSON without type validation. If corrupted or non-integer values exist in the file, `cleanup_stress_workers()` throws `TypeError: pid must be an integer` when instantiating `psutil.Process(pid)`.
+  1. Worker tracking in `_track_workers()` previously used a non-atomic read-modify-write pattern on `.loki/infra_stress_workers.json`. Concurrent runs risked dropping PIDs or causing Windows sharing violations, leaving orphaned burner processes.
+  2. `_read_tracked_workers()` previously parsed JSON without type validation. If corrupted or non-integer values existed in the file, `cleanup_stress_workers()` threw `TypeError: pid must be an integer` when instantiating `psutil.Process(pid)`.
 - **Remediation**:
-  Validate integer types in `_read_tracked_workers()` (`[int(p) for p in data if str(p).isdigit()]`) and isolate process PID tracking.
+  1. Sanitized integer PID parsing in `_read_tracked_workers()` (PR #13).
+  2. Added thread-safe (`threading.Lock()`) and process-safe cross-platform file locking (`msvcrt.locking` on Windows, `fcntl.flock` on Unix) in `_tracking_lock()` context manager.
+  3. Ensured atomic disk writes using temporary files and atomic rename (`Path.replace()`). Verified with concurrency tests in `tests/test_infra_chaos.py` (`test_concurrent_track_workers_threads`, `test_concurrent_track_and_untrack_workers`).
 
 ---
 
