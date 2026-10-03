@@ -35,7 +35,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | ✅ **Resolved** |
-| **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | Open |
+| **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | ✅ **Resolved** |
 
 ---
 
@@ -231,10 +231,14 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### INF-02: Partial Kill Masking & Single-Target Limitation on Shared Ports
-- **File**: `src/loki/engine/infra_chaos.py` (lines 174–175, 194)
+- **File**: `src/loki/engine/infra_chaos.py` (lines 228–320)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
 - **Description**:
-  1. In `kill_process()`, when targeting by `--port`, multiple processes may share the socket. If one process is killed but a subsequent process fails due to permissions, `kill_process()` returns `success=False` immediately, masking partial kills.
-  2. In `pause_process()`, only the first process (`procs[0]`) is paused, leaving sibling worker processes active and rendering the chaos attack incomplete.
+  1. In `kill_process()`, when targeting by `--port`, multiple processes may share the socket. Previously, if one process was killed but a subsequent process failed due to permissions, `kill_process()` returned `success=False` immediately, masking partial kills.
+  2. In `pause_process()`, only the first process (`procs[0]`) was paused, leaving sibling worker processes active and rendering the chaos attack incomplete.
+- **Remediation**:
+  1. In `kill_process()`, iterated across all matched processes without early termination on individual failure. If at least one process is killed, `success=True` is returned, and both killed and failed targets are comprehensively reported in `detail` and `extra`.
+  2. In `pause_process()`, suspended all matched processes concurrently, waited for `duration`, and resumed all suspended processes inside a `finally:` block. Verified with unit tests in `tests/test_infra_chaos.py`.
 
 ---
 

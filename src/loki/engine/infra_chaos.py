@@ -232,58 +232,105 @@ def kill_process(pid: Optional[int] = None, port: Optional[int] = None, name: Op
     if not procs:
         return InfraActionResult("kill", target_desc, success=False, detail="No matching process found.")
 
-    killed = []
     for proc in procs:
         if _is_protected(proc):
             return InfraActionResult(
                 "kill", target_desc, success=False,
                 detail=f"Refused: pid {proc.pid} ({_safe_name(proc)}) looks like a protected system process or LOKI itself.",
             )
+
+    killed = []
+    failed = []
     for proc in procs:
+        proc_name = _safe_name(proc)
         try:
-            proc_name = _safe_name(proc)
             proc.kill()
             killed.append((proc.pid, proc_name))
         except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-            return InfraActionResult("kill", target_desc, success=False, pid=proc.pid, detail=str(e))
+            failed.append((proc.pid, proc_name, str(e)))
+
+    if not killed:
+        return InfraActionResult(
+            "kill", target_desc, success=False,
+            pid=failed[0][0] if failed else None,
+            detail=f"Failed to kill {len(failed)} process(es): " + ", ".join(f"{n} (pid {p}): {err}" for p, n, err in failed),
+            extra={"killed": [], "failed": failed},
+        )
+
+    detail = f"Killed {len(killed)} process(es): " + ", ".join(f"{n} (pid {p})" for p, n in killed)
+    if failed:
+        detail += "; failed to kill: " + ", ".join(f"{n} (pid {p}): {err}" for p, n, err in failed)
 
     return InfraActionResult(
         "kill", target_desc, success=True,
-        detail=f"Killed {len(killed)} process(es): " + ", ".join(f"{n} (pid {p})" for p, n in killed),
-        pid=killed[0][0] if killed else None,
-        extra={"killed": killed},
+        detail=detail,
+        pid=killed[0][0],
+        extra={"killed": killed, "failed": failed},
     )
 
 
 def pause_process(pid: Optional[int] = None, port: Optional[int] = None, name: Optional[str] = None, duration: float = 5.0) -> InfraActionResult:
-    """Suspends the resolved process (SIGSTOP on POSIX, NtSuspendProcess on Windows via
-    psutil) for `duration` seconds, then resumes it — simulates a hung/unresponsive
+    """Suspends the resolved process(es) (SIGSTOP on POSIX, NtSuspendProcess on Windows via
+    psutil) for `duration` seconds, then resumes them — simulates a hung/unresponsive
     dependency instead of a hard crash. Blocks for the duration of the pause."""
     target_desc = f"pid={pid}" if pid else (f"port={port}" if port else f"name='{name}'")
     procs = find_processes(pid=pid, port=port, name=name)
     if not procs:
         return InfraActionResult("pause", target_desc, success=False, detail="No matching process found.")
 
-    proc = procs[0]
-    if _is_protected(proc):
+    for proc in procs:
+        if _is_protected(proc):
+            return InfraActionResult(
+                "pause", target_desc, success=False,
+                detail=f"Refused: pid {proc.pid} ({_safe_name(proc)}) looks like a protected system process or LOKI itself.",
+            )
+
+    suspended = []
+    failed_suspend = []
+    for proc in procs:
+        proc_name = _safe_name(proc)
+        try:
+            proc.suspend()
+            suspended.append((proc, proc_name))
+        except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+            failed_suspend.append((proc.pid, proc_name, str(e)))
+
+    if not suspended:
         return InfraActionResult(
             "pause", target_desc, success=False,
-            detail=f"Refused: pid {proc.pid} ({_safe_name(proc)}) looks like a protected system process or LOKI itself.",
+            pid=failed_suspend[0][0] if failed_suspend else None,
+            detail=f"Failed to suspend {len(failed_suspend)} process(es): " + ", ".join(f"{n} (pid {p}): {err}" for p, n, err in failed_suspend),
+            extra={"suspended": [], "resumed": [], "failed_suspend": failed_suspend, "failed_resume": []},
         )
 
-    proc_name = _safe_name(proc)
+    resumed = []
+    failed_resume = []
     try:
-        proc.suspend()
         time.sleep(max(0.0, duration))
-        proc.resume()
-    except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-        # Best-effort: if it died mid-pause, there's nothing left to resume.
-        return InfraActionResult("pause", target_desc, success=False, pid=proc.pid, detail=str(e))
+    finally:
+        for proc, proc_name in suspended:
+            try:
+                proc.resume()
+                resumed.append((proc.pid, proc_name))
+            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                failed_resume.append((proc.pid, proc_name, str(e)))
+
+    detail = f"Suspended and resumed {len(resumed)} process(es) for {duration}s: " + ", ".join(f"{n} (pid {p})" for p, n in resumed)
+    if failed_suspend:
+        detail += "; failed to suspend: " + ", ".join(f"{n} (pid {p}): {err}" for p, n, err in failed_suspend)
+    if failed_resume:
+        detail += "; failed to resume: " + ", ".join(f"{n} (pid {p}): {err}" for p, n, err in failed_resume)
 
     return InfraActionResult(
         "pause", target_desc, success=True,
-        detail=f"Suspended '{proc_name}' (pid {proc.pid}) for {duration}s, then resumed it.",
-        pid=proc.pid,
+        detail=detail,
+        pid=suspended[0][0].pid,
+        extra={
+            "suspended": [p.pid for p, _ in suspended],
+            "resumed": resumed,
+            "failed_suspend": failed_suspend,
+            "failed_resume": failed_resume,
+        },
     )
 
 
