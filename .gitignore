@@ -17,6 +17,7 @@ dist/
 *.egg-info/
 *.egg
 *.spec
+!loki.spec
 
 # LOKI local runs, videos, and evidence (keep local)
 .loki/runs/

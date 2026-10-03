@@ -8,19 +8,13 @@ description: Operational runbook for compiling standalone cross-platform binarie
 Use this skill whenever building standalone binaries, releasing a new version, or testing global installation methods.
 
 ## 1. Local PyInstaller Compilation
-
+ 
 ```powershell
-# Compile single-file executable locally on Windows
-pyinstaller --clean --noconfirm --name loki-windows-amd64 --onedir `
-  --collect-all playwright `
-  --collect-all litellm `
-  --collect-all typer `
-  --collect-all rich `
-  --collect-all yaml `
-  loki_entry.py
+# Compile optimized single-file executable locally using loki.spec
+pyinstaller --clean --noconfirm loki.spec
 ```
-
-*Note:* Never commit `dist/`, `build/`, or `*.spec` files to Git.
+ 
+*Note:* Never commit `dist/` or `build/` files to Git. The optimized `loki.spec` is tracked in the repository.
 
 ## 2. GitHub Release & Automated Compilation
 - Tagging a new version automatically triggers `.github/workflows/release.yml`.
