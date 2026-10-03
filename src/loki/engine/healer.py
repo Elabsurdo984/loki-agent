@@ -29,18 +29,38 @@ class CodeHealer:
         """Locates the source file most likely responsible for the crash."""
         crashes = incident_data.get("crashes", [])
         combined_logs = " ".join(crashes)
+        repo_root = Path(".").resolve()
 
         # 1. Search for explicit filenames in error traces (e.g. index.html, checkout.js, app.py)
-        matches = re.findall(r'([a-zA-Z0-9_\-\./\\]+\.(?:html|js|jsx|ts|tsx|vue|svelte|py|php))', combined_logs)
+        matches = re.findall(r'([a-zA-Z0-9_\-\./\\]+\.(?:html|jsx|js|tsx|ts|vue|svelte|py|php))\b', combined_logs)
         for candidate in matches:
-            clean_path = Path(candidate.strip("/\\"))
-            if clean_path.exists() and clean_path.is_file():
-                return clean_path
+            clean_str = candidate.strip("/\\")
+            clean_path = Path(clean_str)
+            try:
+                resolved_target = (repo_root / clean_path).resolve()
+                if not resolved_target.is_relative_to(repo_root):
+                    continue
+            except (ValueError, Exception):
+                continue
+
+            if resolved_target.exists() and resolved_target.is_file():
+                rel = resolved_target.relative_to(repo_root)
+                if not any(part.startswith((".", "node_modules", "dist", "build")) for part in rel.parts):
+                    return rel
             
             # Check relative to repo root
-            for found in Path(".").glob(f"**/{clean_path.name}"):
-                if found.is_file() and not any(part.startswith((".", "node_modules", "dist", "build")) for part in found.parts):
-                    return found
+            file_name = clean_path.name
+            if file_name and not file_name.startswith("."):
+                for found in Path(".").glob(f"**/{file_name}"):
+                    try:
+                        resolved_found = found.resolve()
+                        if not resolved_found.is_relative_to(repo_root):
+                            continue
+                        rel_parts = resolved_found.relative_to(repo_root).parts
+                        if resolved_found.is_file() and not any(part.startswith((".", "node_modules", "dist", "build")) for part in rel_parts):
+                            return found
+                    except Exception:
+                        continue
 
         # 2. Check playground/index.html (default chaos sandbox application)
         playground = Path("playground/index.html")
@@ -202,6 +222,14 @@ Do NOT output any markdown formatting or commentary outside the JSON.
         replacement_snippet: str,
     ) -> Dict[str, Any]:
         """Safely applies a code patch to disk with automatic backup creation."""
+        repo_root = Path(".").resolve()
+        try:
+            resolved_target = (repo_root / target_file).resolve() if not target_file.is_absolute() else target_file.resolve()
+            if not resolved_target.is_relative_to(repo_root):
+                return {"success": False, "error": f"Security violation: Target file '{target_file}' is outside the repository root."}
+        except (ValueError, Exception):
+            return {"success": False, "error": f"Invalid target file path: '{target_file}'."}
+
         if not target_file.exists():
             return {"success": False, "error": f"Target file '{target_file}' not found."}
 
@@ -309,6 +337,14 @@ Do NOT output any markdown formatting or commentary outside the JSON.
 
     def rollback(self, target_file: Path, backup_file: Path) -> bool:
         """Manually roll back to backup."""
+        repo_root = Path(".").resolve()
+        try:
+            resolved_target = (repo_root / target_file).resolve() if not target_file.is_absolute() else target_file.resolve()
+            if not resolved_target.is_relative_to(repo_root):
+                return False
+        except Exception:
+            return False
+
         if backup_file.exists():
             shutil.copy2(backup_file, target_file)
             backup_file.unlink()

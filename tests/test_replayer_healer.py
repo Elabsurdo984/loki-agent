@@ -150,3 +150,80 @@ class TestCodeHealerVerifyFix:
         # Source code remains patched and backup remains intact
         assert target.read_text(encoding="utf-8") == "valid_patch_applied()"
         assert backup.exists()
+
+
+class TestCodeHealerSecurityContainment:
+    def test_resolve_source_file_rejects_parent_traversal(self, tmp_path, monkeypatch):
+        # Create an outside file in parent directory
+        outside_file = tmp_path.parent / "sensitive_secret.py"
+        outside_file.write_text("SECRET_KEY = 'leak'", encoding="utf-8")
+
+        try:
+            # Change working directory to tmp_path so it acts as repo root
+            monkeypatch.chdir(tmp_path)
+            healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+
+            incident = {
+                "crashes": [
+                    f"Error in ../sensitive_secret.py: line 10 in <module>",
+                ]
+            }
+
+            resolved = healer.resolve_source_file(incident)
+            # Crucial invariant: Must NEVER return a path outside current repository root
+            assert resolved is None or resolved.resolve().is_relative_to(tmp_path.resolve())
+            if resolved is not None:
+                assert resolved.resolve() != outside_file.resolve()
+        finally:
+            if outside_file.exists():
+                outside_file.unlink()
+
+    def test_resolve_source_file_accepts_internal_file(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        internal_file = tmp_path / "src" / "component.jsx"
+        internal_file.parent.mkdir(parents=True, exist_ok=True)
+        internal_file.write_text("export default function() {}", encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        incident = {
+            "crashes": [
+                "Uncaught TypeError in src/component.jsx: line 5",
+            ]
+        }
+        resolved = healer.resolve_source_file(incident)
+        assert resolved is not None
+        assert resolved.resolve() == internal_file.resolve()
+
+    def test_apply_patch_rejects_path_traversal(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        outside_file = tmp_path.parent / "outside_victim.py"
+        outside_file.write_text("val = 1", encoding="utf-8")
+
+        try:
+            healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+            traversal_path = Path("../outside_victim.py")
+
+            res = healer.apply_patch(
+                target_file=traversal_path,
+                original_snippet="val = 1",
+                replacement_snippet="val = 2",
+            )
+            assert res["success"] is False
+            assert "outside the repository root" in res["error"]
+            # Ensure outside file was never touched
+            assert outside_file.read_text(encoding="utf-8") == "val = 1"
+        finally:
+            if outside_file.exists():
+                outside_file.unlink()
+
+    def test_rollback_rejects_path_traversal(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        outside_file = tmp_path.parent / "outside_victim.py"
+        backup_file = tmp_path / "backup.loki.bak"
+        backup_file.write_text("malicious content", encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.rollback(target_file=Path("../outside_victim.py"), backup_file=backup_file)
+        assert res is False
+        assert backup_file.exists()
+

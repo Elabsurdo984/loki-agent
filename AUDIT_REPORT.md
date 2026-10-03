@@ -27,7 +27,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **SEC-03** | Sensitive Credential & PII Leak in HAR Response Bodies | `src/loki/engine/scrubber.py` | 🟠 **High** | ✅ **Resolved** |
 | **REP-02** | False-Positive "Crash Reproduced" on Internal Script Errors in `repro_test.py` | `src/loki/engine/replayer.py` | 🟠 **High** | ✅ **Resolved** |
 | **CHA-01** | Persistent Offline Network Leak on Unhandled Exceptions | `src/loki/personas/network_tormentor.py` | 🟠 **High** | ✅ **Resolved** |
-| **SEC-02** | Arbitrary File Read / Directory Traversal in Source File Resolution | `src/loki/engine/healer.py` | 🟠 **High** | Open |
+| **SEC-02** | Arbitrary File Read / Directory Traversal in Source File Resolution | `src/loki/engine/healer.py` | 🟠 **High** | ✅ **Resolved** |
 | **REP-01** | Unhandled `TypeError` / `AttributeError` on Null or String Status | `src/loki/engine/html_reporter.py` | 🟠 **High** | ✅ **Resolved (PR #12)** |
 | **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | ✅ **Resolved (PR #15)** |
 | **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved (PR #11)** |
@@ -125,10 +125,11 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### SEC-02: Arbitrary File Read / Directory Traversal in Source File Resolution
-- **File**: `src/loki/engine/healer.py` (lines 34–44)
-- **Description**: In `resolve_source_file()`, filenames are extracted from crash logs using regex matching on common source code extensions (`.py`, `.js`, `.ts`, etc.). The matched path is checked only with `clean_path.is_file()`. If a crash log contains relative traversal sequences (e.g., `../../sensitive_config.py`), `CodeHealer` could read or attempt to patch files outside the active project root directory.
+- **File**: `src/loki/engine/healer.py` (lines 32–60, 220–235, 335–350)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
+- **Description**: In `resolve_source_file()`, filenames are extracted from crash logs using regex matching on common source code extensions (`.py`, `.js`, `.ts`, etc.). The matched path was checked only with `clean_path.is_file()`. If a crash log contained relative traversal sequences (e.g., `../../sensitive_config.py`), `CodeHealer` could read or attempt to patch files outside the active project root directory. Additionally, `js|jsx` regex alternation caused truncated matching on `.jsx` and `.tsx` extensions.
 - **Remediation**:
-  Enforce boundary containment relative to the project root:
+  Enforce strict boundary containment (`is_relative_to(repo_root)`) across `resolve_source_file()`, `apply_patch()`, and `rollback()`. Filter out hidden/meta directories (`.git`, `node_modules`, `dist`, `build`). Fixed regex alternation order to prioritize `jsx` and `tsx` before `js` and `ts` with word boundaries. Verified with unit tests in `TestCodeHealerSecurityContainment`.
   ```python
   clean_path = Path(candidate.strip("/\\"))
   try:
