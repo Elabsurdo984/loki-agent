@@ -468,6 +468,21 @@ class TestCliAndConfigIntegration:
         assert cfg.enabled is True
         assert cfg.fault_rate == 0.3
         assert cfg.auth_chaos_enabled is True
+        assert cfg.auth_fault_rate == 0.4
+        assert cfg.fault_types == [
+            "status_code",
+            "corrupt_json",
+            "delay",
+            "empty_response",
+            "schema_strip",
+        ]
+        assert cfg.delay_range_ms == (1500, 3500)
+        assert cfg.auth_fault_types == [
+            "token_invalidation",
+            "401_unauthorized",
+            "403_forbidden",
+            "token_corruption",
+        ]
 
     def test_resolve_api_chaos_config_yaml_overlay(self, monkeypatch):
         from src.loki.config import resolve_api_chaos_config
@@ -479,7 +494,14 @@ class TestCliAndConfigIntegration:
                     "enabled": False,
                     "fault_rate": 0.75,
                     "auth_chaos": False,
+                    "auth_fault_rate": 0.8,
+                    "fault_types": ["delay", "empty_response"],
+                    "delay_range_ms": [2000, 4000],
+                    "auth_fault_types": ["token_corruption"],
                     "status_codes": [503],
+                    "api_patterns": ["**/api/v2/**"],
+                    "ignored_extensions": [".pdf"],
+                    "monster_string_len": 8000,
                 }
             },
         )
@@ -487,19 +509,40 @@ class TestCliAndConfigIntegration:
         assert cfg.enabled is False
         assert cfg.fault_rate == 0.75
         assert cfg.auth_chaos_enabled is False
+        assert cfg.auth_fault_rate == 0.8
+        assert cfg.fault_types == ["delay", "empty_response"]
+        assert cfg.delay_range_ms == (2000, 4000)
+        assert isinstance(cfg.delay_range_ms, tuple)
+        assert cfg.auth_fault_types == ["token_corruption"]
         assert cfg.status_codes == [503]
+        assert cfg.api_patterns == ["**/api/v2/**"]
+        assert cfg.ignored_extensions == [".pdf"]
+        assert cfg.monster_string_len == 8000
 
     def test_resolve_api_chaos_config_cli_precedence(self, monkeypatch):
         from src.loki.config import resolve_api_chaos_config
 
         monkeypatch.setattr(
             "src.loki.config.load_loki_config",
-            lambda: {"api_chaos": {"enabled": False, "fault_rate": 0.2, "auth_chaos": False}},
+            lambda: {
+                "api_chaos": {
+                    "enabled": False,
+                    "fault_rate": 0.2,
+                    "auth_chaos": False,
+                    "auth_fault_rate": 0.4,
+                }
+            },
         )
-        cfg = resolve_api_chaos_config(cli_enabled=True, fault_rate=0.9, auth_chaos=True)
+        cfg = resolve_api_chaos_config(
+            cli_enabled=True,
+            fault_rate=0.9,
+            auth_chaos=True,
+            auth_fault_rate=0.95,
+        )
         assert cfg.enabled is True
         assert cfg.fault_rate == 0.9
         assert cfg.auth_chaos_enabled is True
+        assert cfg.auth_fault_rate == 0.95
 
     def test_swarm_accepts_api_chaos_config(self):
         from src.loki.personas.swarm import SwarmPersona

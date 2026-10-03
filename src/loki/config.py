@@ -222,6 +222,7 @@ def resolve_api_chaos_config(
     cli_enabled: Optional[bool] = None,
     fault_rate: Optional[float] = None,
     auth_chaos: Optional[bool] = None,
+    auth_fault_rate: Optional[float] = None,
 ) -> Any:
     """
     Builds an ApiChaosConfig by overlaying CLI arguments on top of .loki/config.yaml
@@ -252,20 +253,83 @@ def resolve_api_chaos_config(
         auth_enabled = auth_chaos
     elif "auth_chaos" in yaml_cfg:
         auth_enabled = bool(yaml_cfg["auth_chaos"])
+    elif "auth_chaos_enabled" in yaml_cfg:
+        auth_enabled = bool(yaml_cfg["auth_chaos_enabled"])
     else:
         auth_enabled = True
 
-    status_codes = yaml_cfg.get("status_codes") or [500, 502, 503, 504]
-    api_patterns = yaml_cfg.get("api_patterns") or [
-        "**/api/**", "**/graphql**", "**/v1/**", "**/v2/**", "**/v3/**",
-        "**/rest/**", "**/services/**", "**/*.json*"
-    ]
+    # Auth fault rate resolution: CLI flag > yaml config > default (0.4)
+    if auth_fault_rate is not None:
+        auth_rate = auth_fault_rate
+    elif "auth_fault_rate" in yaml_cfg:
+        auth_rate = float(yaml_cfg["auth_fault_rate"])
+    else:
+        auth_rate = 0.4
+
+    if "fault_types" in yaml_cfg and yaml_cfg["fault_types"] is not None:
+        fault_types = list(yaml_cfg["fault_types"])
+    else:
+        fault_types = [
+            "status_code",
+            "corrupt_json",
+            "delay",
+            "empty_response",
+            "schema_strip",
+        ]
+
+    if "status_codes" in yaml_cfg and yaml_cfg["status_codes"] is not None:
+        status_codes = [int(sc) for sc in yaml_cfg["status_codes"]]
+    else:
+        status_codes = [500, 502, 503, 504]
+
+    if "delay_range_ms" in yaml_cfg and yaml_cfg["delay_range_ms"] is not None:
+        raw_delay = yaml_cfg["delay_range_ms"]
+        delay_range_ms = (int(raw_delay[0]), int(raw_delay[1]))
+    else:
+        delay_range_ms = (1500, 3500)
+
+    if "api_patterns" in yaml_cfg and yaml_cfg["api_patterns"] is not None:
+        api_patterns = list(yaml_cfg["api_patterns"])
+    else:
+        api_patterns = [
+            "**/api/**", "**/graphql**", "**/v1/**", "**/v2/**", "**/v3/**",
+            "**/rest/**", "**/services/**", "**/*.json*"
+        ]
+
+    if "ignored_extensions" in yaml_cfg and yaml_cfg["ignored_extensions"] is not None:
+        ignored_extensions = list(yaml_cfg["ignored_extensions"])
+    else:
+        ignored_extensions = [
+            ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg",
+            ".woff", ".woff2", ".ttf", ".eot", ".ico", ".map", ".html"
+        ]
+
+    if "monster_string_len" in yaml_cfg and yaml_cfg["monster_string_len"] is not None:
+        monster_string_len = int(yaml_cfg["monster_string_len"])
+    else:
+        monster_string_len = 5000
+
+    if "auth_fault_types" in yaml_cfg and yaml_cfg["auth_fault_types"] is not None:
+        auth_fault_types = list(yaml_cfg["auth_fault_types"])
+    else:
+        auth_fault_types = [
+            "token_invalidation",
+            "401_unauthorized",
+            "403_forbidden",
+            "token_corruption",
+        ]
 
     return ApiChaosConfig(
         enabled=enabled,
         fault_rate=rate,
-        auth_chaos_enabled=auth_enabled,
+        fault_types=fault_types,
         status_codes=status_codes,
+        delay_range_ms=delay_range_ms,
         api_patterns=api_patterns,
+        ignored_extensions=ignored_extensions,
+        monster_string_len=monster_string_len,
+        auth_chaos_enabled=auth_enabled,
+        auth_fault_rate=auth_rate,
+        auth_fault_types=auth_fault_types,
     )
 
