@@ -23,10 +23,15 @@ pyinstaller --clean --noconfirm --name loki-windows-amd64 --onedir `
 *Note:* Never commit `dist/`, `build/`, or `*.spec` files to Git.
 
 ## 2. GitHub Release & Automated Compilation
-- Tagging a new version automatically triggers `.github/workflows/release.yml`:
+- Tagging a new version automatically triggers `.github/workflows/release.yml`.
+- **CRITICAL Release Prerequisites**:
+  1. Bump version in `src/loki/__init__.py`.
+  2. Create `CHANGELOG/<version>.md` (e.g., `CHANGELOG/v1.9.1.md`). The release workflow reads `body_path: CHANGELOG/${{ github.ref_name }}.md`.
+  3. **Always include the `## Contributors` section** at the bottom of the release changelog crediting all merged community PRs and first-time contributors (pattern: `- @username made their first contribution (PR #X).`), as established in `CHANGELOG/v1.5.0.md`.
+- Create and push the annotated tag:
   ```powershell
-  git tag -a v1.1.0 -m "Release v1.1.0: Mobile Matrix & Autonomous Self-Healing"
-  git push origin v1.1.0
+  git tag -a v1.9.1 -m "Release v1.9.1: Comprehensive Security, Stability & Concurrency Hardening"
+  git push origin v1.9.1
   ```
 - The CI pipeline compiles standalone executables for:
   - Windows: `loki-windows-amd64.exe`
