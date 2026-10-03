@@ -39,7 +39,7 @@ class CIGate:
             lines.append(f"| **Emulated Device** | 📱 `{report.device_name} ({report.orientation})` |")
         lines.extend([
             f"| **Duration** | `{report.duration_seconds}s` |",
-            f"| **Crashes Detected** | `{len(report.crashes) + len(report.http_errors)}` |",
+            f"| **Failures Detected** | `{report.total_failures_count}` |",
             f"| **Actions Executed** | `{len(report.actions_taken)}` |\n",
         ])
 
@@ -62,9 +62,21 @@ class CIGate:
         if report.has_crashes:
             lines.append("### 💥 Detected Crashes & Failures\n")
             for crash in set(report.crashes):
-                lines.append(f"- 🔴 `{crash}`")
+                lines.append(f"- 🔴 **Unhandled Exception:** `{crash}`")
+            for rej in report.unhandled_rejections:
+                lines.append(f"- 🔴 **Unhandled Rejection:** `{rej}`")
+            for cerr in report.console_errors:
+                lines.append(f"- 🔴 **Console Error:** `{cerr}`")
             for http_err in report.http_errors:
-                lines.append(f"- 🔴 `{http_err}`")
+                lines.append(f"- 🔴 **HTTP Failure:** `{http_err}`")
+            for req_fail in report.failed_requests:
+                lines.append(f"- 🔴 **Request Failed / CORS:** `{req_fail}`")
+            for nav_err in report.navigation_errors:
+                lines.append(f"- 🔴 **Navigation / Error Page:** `{nav_err}`")
+            for res_fail in report.resource_failures:
+                lines.append(f"- 🔴 **Broken Resource:** `{res_fail}`")
+            for dlg in report.unexpected_dialogs:
+                lines.append(f"- 🔴 **Unexpected Dialog:** `{dlg}`")
             lines.append("")
 
         if run_dir:

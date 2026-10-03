@@ -54,9 +54,16 @@ class IncidentReporter:
             "duration_seconds": report.duration_seconds,
             "unique_crashes_count": len(set(report.crashes)),
             "crashes": list(set(report.crashes)),
-            "http_errors": report.http_errors,
-            "layout_issues": report.layout_issues,
             "console_errors_count": len(report.console_errors),
+            "console_errors": report.console_errors,
+            "http_errors": report.http_errors,
+            "failed_requests": report.failed_requests,
+            "unhandled_rejections": report.unhandled_rejections,
+            "navigation_errors": report.navigation_errors,
+            "resource_failures": report.resource_failures,
+            "unexpected_dialogs": report.unexpected_dialogs,
+            "layout_issues": report.layout_issues,
+            "total_failures_count": report.total_failures_count,
             "actions_executed_count": len(report.actions_taken),
             "actions_taken": report.actions_taken,
             "replay_trace": report.replay_trace,
@@ -203,8 +210,11 @@ def test_reproduce_crash():
         browser = p.chromium.launch(headless=False)
 {device_setup}
 
-        # Listen for the exact crash
-        page.on("pageerror", lambda err: detected_errors.append(str(err)))
+        # Listen for the exact crash and failure signals
+        page.on("pageerror", lambda err: detected_errors.append(f"Unhandled JS error: {{err}}"))
+        page.on("console", lambda msg: detected_errors.append(f"Console error: {{msg.text}}") if msg.type == "error" else None)
+        page.on("requestfailed", lambda req: detected_errors.append(f"Failed request: [{{req.method}}] {{req.url}} ({{req.failure}})"))
+        page.on("dialog", lambda d: detected_errors.append(f"Unexpected {{d.type}} dialog: {{d.message}}"))
 
         # Register deterministic API route mocks if faults were injected
         if API_FAULTS:

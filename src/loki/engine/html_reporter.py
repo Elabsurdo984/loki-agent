@@ -33,6 +33,12 @@ class HTMLReporter:
         video_file = data.get("video_file")
         crashes = data.get("crashes") or []
         http_errors = data.get("http_errors") or []
+        console_errors = data.get("console_errors") or []
+        failed_requests = data.get("failed_requests") or []
+        unhandled_rejections = data.get("unhandled_rejections") or []
+        navigation_errors = data.get("navigation_errors") or []
+        resource_failures = data.get("resource_failures") or []
+        unexpected_dialogs = data.get("unexpected_dialogs") or []
         actions = data.get("actions_taken") or []
         rules_evals = data.get("rules_evaluations") or []
         device = data.get("device")
@@ -43,10 +49,19 @@ class HTMLReporter:
 
         # Verdict calculation
         has_violations = any(str(r.get("status") or "").upper() == "VIOLATED" for r in rules_evals)
-        has_crashes = len(crashes) > 0 or len(http_errors) > 0
+        has_failures = (
+            len(crashes) > 0
+            or len(http_errors) > 0
+            or len(console_errors) > 0
+            or len(failed_requests) > 0
+            or len(unhandled_rejections) > 0
+            or len(navigation_errors) > 0
+            or len(resource_failures) > 0
+            or len(unexpected_dialogs) > 0
+        )
         has_layout_issues = len(layout_issues) > 0
 
-        if has_crashes or has_violations or has_layout_issues:
+        if has_failures or has_violations or has_layout_issues:
             verdict_badge = '<span class="badge badge-danger">FAIL / ISSUES DETECTED</span>'
         else:
             verdict_badge = '<span class="badge badge-success">ALL CHECKS PASSED</span>'
@@ -80,15 +95,45 @@ class HTMLReporter:
         for act in actions:
             actions_html += f'<li class="timeline-item"><span class="bullet"></span><span class="action-text">{html.escape(act)}</span></li>\n'
 
-        # Crashes list
+        # Failures & Crashes list
+        total_failures = (
+            len(crashes)
+            + len(console_errors)
+            + len(http_errors)
+            + len(failed_requests)
+            + len(unhandled_rejections)
+            + len(navigation_errors)
+            + len(resource_failures)
+            + len(unexpected_dialogs)
+        )
         crashes_html = ""
-        if crashes or http_errors:
+        if total_failures > 0:
             for c in crashes:
                 crashes_html += f'<div class="error-item"><strong>Unhandled Exception:</strong> {html.escape(str(c))}</div>'
+            for ur in unhandled_rejections:
+                crashes_html += f'<div class="error-item"><strong>Unhandled Promise Rejection:</strong> {html.escape(str(ur))}</div>'
+            for ce in console_errors:
+                crashes_html += f'<div class="error-item"><strong>Console Error (Silent Break):</strong> {html.escape(str(ce))}</div>'
             for h in http_errors:
                 crashes_html += f'<div class="error-item"><strong>HTTP Failure:</strong> {html.escape(str(h))}</div>'
+            for fr in failed_requests:
+                crashes_html += f'<div class="error-item"><strong>Request Failed / CORS:</strong> {html.escape(str(fr))}</div>'
+            for ne in navigation_errors:
+                crashes_html += f'<div class="error-item"><strong>Navigation / Error Page:</strong> {html.escape(str(ne))}</div>'
+            for rf in resource_failures:
+                crashes_html += f'<div class="error-item"><strong>Broken Resource:</strong> {html.escape(str(rf))}</div>'
+            for ud in unexpected_dialogs:
+                crashes_html += f'<div class="error-item"><strong>Unexpected Dialog:</strong> {html.escape(str(ud))}</div>'
         else:
-            crashes_html = '<div class="no-errors">🛡️ Zero unhandled crashes or HTTP failures detected.</div>'
+            crashes_html = '<div class="no-errors">🛡️ Zero unhandled crashes, console errors, or network/DOM failures detected.</div>'
+
+        failures_color = "var(--accent-red)" if total_failures > 0 else "var(--accent-green)"
+        failures_stat_card = f"""
+            <div class="stat-card">
+                <div class="stat-label">Failures Detected</div>
+                <div class="stat-value" style="color: {failures_color};">{total_failures}</div>
+            </div>
+        """
 
         # Video section
         video_html = ""
@@ -591,6 +636,7 @@ class HTMLReporter:
                 <div class="stat-label">Active Persona</div>
                 <div class="stat-value">{persona}</div>
             </div>
+            {failures_stat_card}
             {device_stat_card}
             {api_stat_card}
             <div class="stat-card">

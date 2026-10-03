@@ -640,12 +640,39 @@ def run(
         run_dir = reporter.save_session(report, rules_evaluations=evaluations)
 
     if report.has_crashes:
-        console.print("\n[bold red]💥 CRASHES DETECTED![/bold red]")
-        unique_crashes = list(set(report.crashes))
-        for crash in unique_crashes:
-            console.print(f"  [red]• Unhandled error:[/red] {crash}")
-        for http_err in report.http_errors:
-            console.print(f"  [red]• HTTP failure:[/red] {http_err}")
+        console.print(f"\n[bold red]💥 ANOMALIES & FAILURES DETECTED ({report.total_failures_count})![/bold red]")
+        if report.crashes:
+            for crash in set(report.crashes):
+                console.print(f"  [red]• Unhandled JS exception:[/red] {crash}")
+        if report.unhandled_rejections:
+            for rej in report.unhandled_rejections:
+                console.print(f"  [red]• Unhandled Promise rejection:[/red] {rej}")
+        if report.console_errors:
+            for cerr in report.console_errors[:10]:
+                console.print(f"  [red]• Console error (silent break):[/red] {cerr}")
+            if len(report.console_errors) > 10:
+                console.print(f"  [dim]... and {len(report.console_errors) - 10} more console errors.[/dim]")
+        if report.http_errors:
+            for http_err in report.http_errors[:10]:
+                console.print(f"  [red]• HTTP error (4xx/5xx):[/red] {http_err}")
+            if len(report.http_errors) > 10:
+                console.print(f"  [dim]... and {len(report.http_errors) - 10} more HTTP errors.[/dim]")
+        if report.failed_requests:
+            for req_fail in report.failed_requests[:10]:
+                console.print(f"  [red]• Request failed / CORS:[/red] {req_fail}")
+            if len(report.failed_requests) > 10:
+                console.print(f"  [dim]... and {len(report.failed_requests) - 10} more failed requests.[/dim]")
+        if report.navigation_errors:
+            for nav_err in report.navigation_errors:
+                console.print(f"  [red]• Navigation / Error page:[/red] {nav_err}")
+        if report.resource_failures:
+            for res_fail in report.resource_failures[:10]:
+                console.print(f"  [red]• Broken resource:[/red] {res_fail}")
+            if len(report.resource_failures) > 10:
+                console.print(f"  [dim]... and {len(report.resource_failures) - 10} more resource failures.[/dim]")
+        if report.unexpected_dialogs:
+            for dlg in report.unexpected_dialogs:
+                console.print(f"  [red]• Unexpected dialog:[/red] {dlg}")
         if run_dir:
             console.print(
                 Panel(
@@ -655,19 +682,16 @@ def run(
                     f"📜 [cyan]Metadata:[/cyan] {run_dir}/incident.json\n"
                     f"⚡ [cyan]Repro test:[/cyan] {run_dir}/repro_test.py\n"
                     f"📊 [cyan]HTML Report:[/cyan] {run_dir}/report.html\n\n"
-                    f"[bold yellow]To reproduce this crash deterministically run:[/bold yellow]\n"
+                    f"[bold yellow]To reproduce this incident deterministically run:[/bold yellow]\n"
                     f"[bold green]python {run_dir}/repro_test.py[/bold green]",
                     title="[bold red]📦 Evidence Captured[/bold red]",
                     border_style="red",
                 )
             )
     else:
-        console.print("\n[bold green]🛡️ No unhandled crashes detected during this run.[/bold green]")
+        console.print("\n[bold green]🛡️ Zero unhandled crashes or failure anomalies detected during this run.[/bold green]")
         if run_dir:
             console.print(f"\n[bold cyan]📊 HTML Report generated:[/bold cyan] [underline]{run_dir}/report.html[/underline]")
-
-    if report.console_errors:
-        console.print(f"\n[bold yellow]⚠ Console Warnings/Errors logged: {len(report.console_errors)}[/bold yellow]")
 
     if report.layout_issues:
         console.print(f"\n[bold yellow]📱 Mobile Responsive Layout Anomalies ({len(report.layout_issues)}):[/bold yellow]")
@@ -729,10 +753,10 @@ def run(
     # 6. CI/CD Quality Gate Enforcement
     if is_ci_mode:
         if report.has_crashes or has_violations:
-            console.print("\n[bold red]❌ CI/CD Quality Gate FAILED: Crashes or business rule violations detected.[/bold red]")
+            console.print("\n[bold red]❌ CI/CD Quality Gate FAILED: Failures, crashes, or business rule violations detected.[/bold red]")
             raise typer.Exit(code=1)
         else:
-            console.print("\n[bold green]✔ CI/CD Quality Gate PASSED: 0 crashes and all business rules satisfied.[/bold green]")
+            console.print("\n[bold green]✔ CI/CD Quality Gate PASSED: 0 failures and all business rules satisfied.[/bold green]")
             raise typer.Exit(code=0)
 
 @app.command()

@@ -26,8 +26,12 @@ class CodeHealer:
 
     def resolve_source_file(self, incident_data: dict[str, Any]) -> Path | None:
         """Locates the source file most likely responsible for the crash."""
-        crashes = incident_data.get("crashes", [])
-        combined_logs = " ".join(crashes)
+        all_logs = []
+        for key in ["crashes", "unhandled_rejections", "console_errors", "http_errors", "failed_requests", "resource_failures", "navigation_errors"]:
+            vals = incident_data.get(key, [])
+            if isinstance(vals, list):
+                all_logs.extend([str(v) for v in vals])
+        combined_logs = " ".join(all_logs)
         repo_root = Path(".").resolve()
 
         # 1. Search for explicit filenames in error traces (e.g. index.html, checkout.js, app.py)
@@ -94,7 +98,15 @@ class CodeHealer:
             }
 
         source_code = target_file.read_text(encoding="utf-8")
-        crashes = incident_data.get("crashes", [])
+        crashes = (
+            incident_data.get("crashes", [])
+            + incident_data.get("unhandled_rejections", [])
+            + incident_data.get("console_errors", [])
+            + incident_data.get("http_errors", [])
+            + incident_data.get("failed_requests", [])
+            + incident_data.get("resource_failures", [])
+            + incident_data.get("navigation_errors", [])
+        )
         api_faults = incident_data.get("api_faults", [])
         layout_issues = incident_data.get("layout_issues", [])
 
