@@ -20,10 +20,14 @@ python -m loki.cli run -m pixel-7 --orientation landscape
 # 3. Multi-vector Swarm assault with HTML report auto-open
 python -m loki.cli run --swarm --duration 6 --open
 
-# 4. Attack a recorded user journey
+# 4. Cross-browser engine assault (Firefox or WebKit / Safari)
+python -m loki.cli run --browser firefox
+python -m loki.cli run -b webkit
+
+# 5. Attack a recorded user journey
 python -m loki.cli run --journey checkout_flow -p novice-chaotic --headed
 
-# 5. Strict CI/CD quality gate enforcement
+# 6. Strict CI/CD quality gate enforcement
 python -m loki.cli run --ci
 ```
 

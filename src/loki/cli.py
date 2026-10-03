@@ -266,6 +266,12 @@ class PersonaChoice(str, Enum):
     ALL = "all"
     NONE = "none"
 
+
+class BrowserChoice(str, Enum):
+    CHROMIUM = "chromium"
+    FIREFOX = "firefox"
+    WEBKIT = "webkit"
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """Main entry point for LOKI. With no subcommand, launches the interactive chat."""
@@ -451,6 +457,12 @@ def run(
         "--auth-chaos/--no-auth-chaos",
         help="Enable or disable mid-flight auth token invalidation and cookie eviction (default: enabled)",
     ),
+    browser: BrowserChoice = typer.Option(
+        BrowserChoice.CHROMIUM,
+        "--browser",
+        "-b",
+        help="Browser engine to run the chaos attack in (chromium, firefox, webkit)",
+    ),
 ):
     """Execute a monitored chaos attack on a target URL to sniff for crashes and errors."""
     is_ci_mode = ci or strict or CIGate.is_ci_environment()
@@ -518,6 +530,7 @@ def run(
         persona_label = active_persona.name if active_persona else "Passive Observer"
 
     console.print(f"[bold cyan]⚡ Target URL:[/bold cyan] {resolved_url}")
+    console.print(f"[bold cyan]🌐 Browser Engine:[/bold cyan] {browser.value.capitalize()}")
     if journey_data:
         console.print(f"[bold blue]🗺️ Guided Journey:[/bold blue] {journey_data.get('name')} ({journey_data.get('total_steps')} steps)")
     console.print(f"[bold magenta]🎭 Active Persona:[/bold magenta] {persona_label}")
@@ -530,7 +543,10 @@ def run(
             f"[dim](rate: {int(api_chaos_config.fault_rate * 100)}%, auth chaos: {auth_status})[/dim]"
         )
 
-    sandbox = ChaosSandbox(headless=target_config.get("headless", True) and not headed)
+    sandbox = ChaosSandbox(
+        headless=target_config.get("headless", True) and not headed,
+        browser_name=browser.value,
+    )
 
     if concurrency > 1:
         resolved_target_selector = target_selector
@@ -852,6 +868,12 @@ def fix(
 def record(
     name: str = typer.Argument("checkout_flow", help="Descriptive identifier for this user journey"),
     url: str | None = typer.Option(None, "--url", "-u", help="Target URL (defaults to .loki/config.yaml if omitted)"),
+    browser: BrowserChoice = typer.Option(
+        BrowserChoice.CHROMIUM,
+        "--browser",
+        "-b",
+        help="Browser engine to record user journey in (chromium, firefox, webkit)",
+    ),
 ):
     """Interactively record a human user journey and save it as a test blueprint."""
     config = load_loki_config()
@@ -868,6 +890,7 @@ def record(
         Panel(
             f"[bold white]Starting interactive recording session...[/bold white]\n\n"
             f"🌐 [cyan]URL:[/cyan] {resolved_url}\n"
+            f"🌐 [cyan]Browser:[/cyan] {browser.value.capitalize()}\n"
             f"📝 [cyan]Journey Name:[/cyan] {name}\n\n"
             f"[dim]• Perform your test flow naturally in the browser window.[/dim]\n"
             f"[dim]• Passwords and secrets will be masked automatically.[/dim]\n"
@@ -878,7 +901,9 @@ def record(
     )
 
     recorder = JourneyRecorder()
-    journey_path = recorder.record_journey(start_url=resolved_url, journey_name=name)
+    journey_path = recorder.record_journey(
+        start_url=resolved_url, journey_name=name, browser_name=browser.value
+    )
 
     # Read recorded journey summary
     with open(journey_path, encoding="utf-8") as f:

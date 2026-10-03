@@ -90,6 +90,8 @@ $PYTHON = ".\.venv\Scripts\python.exe"
 
 # 3. Execute chaotic testing
 &$PYTHON -m loki.cli run                                            # Standard unguided assault
+&$PYTHON -m loki.cli run --browser firefox                           # Cross-browser assault (firefox)
+&$PYTHON -m loki.cli run -b webkit                                  # Cross-browser Safari/WebKit assault
 &$PYTHON -m loki.cli run --device iphone-15 --orientation portrait  # Mobile viewport & responsive audit
 &$PYTHON -m loki.cli run -m pixel-7 --orientation landscape         # Android tablet/mobile landscape
 &$PYTHON -m loki.cli run --swarm                                   # Orchestrate all 4 personas in waves

@@ -316,11 +316,12 @@ class LokiChatSession:
     def _handle_run_command(self, args: str):
         """Parses `/run [url] [flags]` and launches a real chaos session via the same
         `run()` used by `loki run`, without leaving the chat."""
-        from loki.cli import PersonaChoice, run as cli_run
+        from loki.cli import PersonaChoice, BrowserChoice, run as cli_run
 
         tokens = args.split()
         url = None
         persona_raw = None
+        browser_raw = None
         kwargs: dict[str, Any] = dict(
             duration=None, headed=False, swarm=False, journey=None,
             rules=True, report_html=True, open_report=False, ci=False,
@@ -424,6 +425,11 @@ class LokiChatSession:
                 kwargs["auth_chaos"] = True
             elif low == "--no-auth-chaos":
                 kwargs["auth_chaos"] = False
+            elif low in ("-b", "--browser"):
+                v = _next_value()
+                if v is None:
+                    return
+                browser_raw = v
             elif not t.startswith("-") and url is None:
                 url = t
             else:
@@ -440,7 +446,16 @@ class LokiChatSession:
                 self.console.print(f"[yellow]Unknown persona '{persona_raw}'. Valid options: {valid}[/yellow]")
                 return
 
-        self._run_cli_action("loki run", cli_run, url=url, persona=persona, **kwargs)
+        browser = BrowserChoice.CHROMIUM
+        if browser_raw:
+            try:
+                browser = BrowserChoice(browser_raw.lower())
+            except ValueError:
+                valid = ", ".join(b.value for b in BrowserChoice)
+                self.console.print(f"[yellow]Unknown browser '{browser_raw}'. Valid options: {valid}[/yellow]")
+                return
+
+        self._run_cli_action("loki run", cli_run, url=url, persona=persona, browser=browser, **kwargs)
 
     def _handle_fix_command(self, args: str):
         """Parses `/fix [run_id] [flags]` and runs the same diagnosis/patch flow as `loki fix`."""

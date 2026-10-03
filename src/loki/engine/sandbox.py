@@ -12,6 +12,7 @@ class IncidentReport:
     """Stores all anomalies and crash data captured during an execution."""
     target_url: str
     persona_name: str | None = None
+    browser_name: str = "chromium"
     device_name: str | None = None
     device_requested: str | None = None
     orientation: str = "portrait"
@@ -156,10 +157,13 @@ def resolve_device(
 class ChaosSandbox:
     """Manages an isolated browser session with live error sniffing and video capture."""
 
-    def __init__(self, output_dir: str = ".loki/runs", headless: bool = True):
+    def __init__(self, output_dir: str = ".loki/runs", headless: bool = True, browser_name: str = "chromium"):
         self.output_dir = Path(output_dir)
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.headless = headless
+        self.browser_name = (browser_name or "chromium").lower().strip()
+        if self.browser_name not in ("chromium", "firefox", "webkit"):
+            self.browser_name = "chromium"
 
     def _sniff_mobile_layout(self, page: Page) -> list[str]:
         """Sniffs for mobile responsiveness issues such as horizontal scroll overflows and missing viewport meta tags."""
@@ -259,6 +263,7 @@ class ChaosSandbox:
             target_url=target_url,
             persona_name=persona.name if persona else None,
             orientation=orientation,
+            browser_name=self.browser_name,
         )
         start_time = time.time()
         temp_har_file = self.output_dir / f"temp_network_{int(start_time)}.har"
@@ -272,17 +277,18 @@ class ChaosSandbox:
             report.device_requested = device_name
             report.device_name = resolved_device_name
 
+            browser_type = getattr(p, self.browser_name)
             try:
-                browser = p.chromium.launch(headless=self.headless)
+                browser = browser_type.launch(headless=self.headless)
             except Error as e:
                 err_msg = str(e).lower()
                 if "executable doesn't exist" in err_msg or "playwright install" in err_msg:
                     import subprocess
                     import sys
                     from rich.console import Console
-                    Console().print("[bold yellow]⚡ Chromium browser not found. Installing automatically via Playwright...[/bold yellow]")
-                    subprocess.run([sys.executable, "-m", "playwright", "install", "chromium"], check=True)
-                    browser = p.chromium.launch(headless=self.headless)
+                    Console().print(f"[bold yellow]⚡ {self.browser_name.capitalize()} browser not found. Installing automatically via Playwright...[/bold yellow]")
+                    subprocess.run([sys.executable, "-m", "playwright", "install", self.browser_name], check=True)
+                    browser = browser_type.launch(headless=self.headless)
                 else:
                     raise e
 
@@ -532,7 +538,18 @@ class ChaosSandbox:
         }
         try:
             with sync_playwright() as p:
-                browser = p.chromium.launch(headless=self.headless)
+                browser_type = getattr(p, self.browser_name)
+                try:
+                    browser = browser_type.launch(headless=self.headless)
+                except Error as e:
+                    err_msg = str(e).lower()
+                    if "executable doesn't exist" in err_msg or "playwright install" in err_msg:
+                        import subprocess
+                        import sys
+                        subprocess.run([sys.executable, "-m", "playwright", "install", self.browser_name], check=True)
+                        browser = browser_type.launch(headless=self.headless)
+                    else:
+                        raise e
                 context = browser.new_context(**(device_config or {}))
                 page = context.new_page()
 
@@ -613,7 +630,13 @@ class ChaosSandbox:
         the same click on all of them in lockstep, to probe for server-side race
         conditions (double charges, oversold inventory, duplicate submissions) that a
         single tab's sequential click bursts cannot trigger."""
-        report = IncidentReport(target_url=target_url, persona_name=None, orientation=orientation, concurrency=concurrency)
+        report = IncidentReport(
+            target_url=target_url,
+            persona_name=None,
+            orientation=orientation,
+            concurrency=concurrency,
+            browser_name=self.browser_name,
+        )
         start_time = time.time()
 
         with sync_playwright() as p:

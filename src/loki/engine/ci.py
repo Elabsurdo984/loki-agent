@@ -28,12 +28,14 @@ class CIGate:
         failed = report.has_crashes or has_violations
         status_badge = "❌ **FAILED**" if failed else "✔ **PASSED**"
 
+        browser_label = (report.browser_name or "chromium").capitalize()
         lines = [
             f"## ⚡ LOKI Quality & Chaos Gate — {status_badge}\n",
             "| Metric | Value |",
             "| :--- | :--- |",
             f"| **Target URL** | `{report.target_url}` |",
             f"| **Active Persona** | `{report.persona_name or 'Passive Observer'}` |",
+            f"| **Browser Engine** | 🌐 `{browser_label}` |",
         ]
         if report.device_name:
             lines.append(f"| **Emulated Device** | 📱 `{report.device_name} ({report.orientation})` |")

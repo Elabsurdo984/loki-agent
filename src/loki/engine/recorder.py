@@ -3,7 +3,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from playwright.sync_api import sync_playwright, Page, BrowserContext
+from playwright.sync_api import sync_playwright, Page, BrowserContext, Error
 
 
 class JourneyRecorder:
@@ -24,13 +24,29 @@ class JourneyRecorder:
             "timestamp": round(time.time(), 3),
         })
 
-    def record_journey(self, start_url: str, journey_name: str) -> Path:
+    def record_journey(self, start_url: str, journey_name: str, browser_name: str = "chromium") -> Path:
         """Launches an interactive browser session and logs user clicks and inputs."""
         self.recorded_events.clear()
+        browser_key = (browser_name or "chromium").lower().strip()
+        if browser_key not in ("chromium", "firefox", "webkit"):
+            browser_key = "chromium"
 
         with sync_playwright() as p:
             # Launch in visible headed mode for the human operator
-            browser = p.chromium.launch(headless=False)
+            browser_type = getattr(p, browser_key)
+            try:
+                browser = browser_type.launch(headless=False)
+            except Error as e:
+                err_msg = str(e).lower()
+                if "executable doesn't exist" in err_msg or "playwright install" in err_msg:
+                    import subprocess
+                    import sys
+                    from rich.console import Console
+                    Console().print(f"[bold yellow]⚡ {browser_key.capitalize()} browser not found. Installing automatically via Playwright...[/bold yellow]")
+                    subprocess.run([sys.executable, "-m", "playwright", "install", browser_key], check=True)
+                    browser = browser_type.launch(headless=False)
+                else:
+                    raise e
             context: BrowserContext = browser.new_context(
                 viewport={"width": 1280, "height": 800}
             )

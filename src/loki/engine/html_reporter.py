@@ -43,6 +43,7 @@ class HTMLReporter:
         rules_evals = data.get("rules_evaluations") or []
         device = data.get("device")
         orientation = data.get("orientation", "portrait")
+        browser = html.escape(str(data.get("browser") or "chromium"))
         layout_issues = data.get("layout_issues") or []
         concurrency = cls._safe_int(data.get("concurrency"), 1)
         concurrency_lanes = data.get("concurrency_lanes") or []
@@ -132,6 +133,13 @@ class HTMLReporter:
             <div class="stat-card">
                 <div class="stat-label">Failures Detected</div>
                 <div class="stat-value" style="color: {failures_color};">{total_failures}</div>
+            </div>
+        """
+
+        browser_stat_card = f"""
+            <div class="stat-card">
+                <div class="stat-label">Browser Engine</div>
+                <div class="stat-value" style="text-transform: capitalize;">🌐 {browser}</div>
             </div>
         """
 
@@ -637,6 +645,7 @@ class HTMLReporter:
                 <div class="stat-value">{persona}</div>
             </div>
             {failures_stat_card}
+            {browser_stat_card}
             {device_stat_card}
             {api_stat_card}
             <div class="stat-card">
