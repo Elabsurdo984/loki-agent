@@ -138,7 +138,10 @@ def test_ci_step_summary_renders_seed(tmp_path: Path, monkeypatch: pytest.Monkey
 
 
 def test_cli_seed_option_in_help():
-    runner = CliRunner()
+    import re
+    runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb"})
     result = runner.invoke(app, ["run", "--help"])
     assert result.exit_code == 0
-    assert "--seed" in result.output
+    clean_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
+    assert "--seed" in clean_output
+

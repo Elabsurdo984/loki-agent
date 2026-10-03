@@ -148,16 +148,20 @@ def test_journey_recorder_uses_specified_browser(tmp_path: Path):
 
 
 def test_cli_help_shows_browser_flag():
-    runner = CliRunner()
+    import re
+    runner = CliRunner(env={"NO_COLOR": "1", "TERM": "dumb"})
     result = runner.invoke(app, ["run", "--help"])
     assert result.exit_code == 0
-    assert "--browser" in result.output
-    assert "-b" in result.output
-    assert "chromium" in result.output
-    assert "firefox" in result.output
-    assert "webkit" in result.output
+    clean_output = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", result.output)
+    assert "--browser" in clean_output
+    assert "-b" in clean_output
+    assert "chromium" in clean_output
+    assert "firefox" in clean_output
+    assert "webkit" in clean_output
 
     record_result = runner.invoke(app, ["record", "--help"])
     assert record_result.exit_code == 0
-    assert "--browser" in record_result.output
-    assert "-b" in record_result.output
+    clean_record = re.sub(r"\x1b\[[0-9;]*[a-zA-Z]", "", record_result.output)
+    assert "--browser" in clean_record
+    assert "-b" in clean_record
+
