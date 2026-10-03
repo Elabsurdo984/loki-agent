@@ -516,7 +516,14 @@ class LokiChatSession:
         from rich.prompt import Confirm
         try:
             if Confirm.ask("Do you want to update LOKI now via uv?", default=True):
-                perform_update(self.console)
+                updated = perform_update(self.console)
+                if updated:
+                    self.console.print()
+                    if Confirm.ask("Exit interactive chat now to load the updated version?", default=True):
+                        self.console.print("[dim]Exiting LOKI. Run 'loki chat' to start using the updated version! 🛡️[/dim]")
+                        sys.exit(0)
+                    else:
+                        self.console.print("[yellow]Continuing session with current in-memory version. Please restart LOKI when finished.[/yellow]")
         except (KeyboardInterrupt, EOFError):
             self.console.print("\n[dim]Update cancelled.[/dim]")
 

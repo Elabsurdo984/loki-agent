@@ -34,7 +34,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | ✅ **Resolved** |
-| **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | Open |
+| **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | ✅ **Resolved** |
 | **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | Open |
 
 ---
@@ -221,10 +221,12 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ### 🟢 Low Severity
 
 #### UPD-01: Outdated In-Memory Binary Persistence on Unix Post-Update
-- **File**: `src/loki/engine/updater.py` (lines 197–208)
-- **Description**: On Windows, `perform_update()` launches a detached PowerShell process and exits LOKI with `os._exit(0)` to prevent file locking. On Unix systems, `uv tool upgrade` successfully updates the binary on disk, but `perform_update()` returns `True` and keeps the current Python process running. The user continues interacting with the outdated in-memory module without realizing an exit is required.
+- **File**: `src/loki/engine/updater.py` (lines 145–240), `src/loki/ai/chat.py` (lines 515–528)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
+- **Description**: On Windows, `perform_update()` launches a detached PowerShell process and exits LOKI with `os._exit(0)` to prevent file locking. On Unix systems, `uv tool upgrade` successfully updates the binary on disk, but previously `perform_update()` returned `True` and kept the current Python process running. In interactive sessions like `loki chat`, the user continued interacting with the outdated in-memory module without realizing an exit was required to load the updated code.
 - **Remediation**:
-  Prompt the user or call `sys.exit(0)` after a confirmed upgrade on Unix.
+  1. Updated `perform_update()` to explicitly print a restart notice upon successful completion on Unix, with an optional `exit_on_success: bool = False` flag.
+  2. In `src/loki/ai/chat.py` (`_handle_update_command()`), added a prompt asking the operator if they wish to exit the chat session now to load the updated version, calling `sys.exit(0)` upon confirmation. Verified with unit tests in `tests/test_updater.py`.
 
 ---
 

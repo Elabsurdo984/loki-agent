@@ -142,8 +142,10 @@ def print_update_banner(console: Console, update_info: Dict[str, Any]) -> None:
     )
 
 
-def perform_update(console: Console) -> bool:
-    """Executes the self-update using uv and displays streaming output."""
+def perform_update(console: Console, exit_on_success: bool = False) -> bool:
+    """Executes the self-update using uv and displays streaming output.
+    On Unix systems, notifies the user that a restart is required to load the new binary,
+    or exits cleanly if exit_on_success is True."""
     uv_bin = shutil.which("uv")
     if not uv_bin:
         console.print("[bold red]Error:[/bold red] 'uv' was not found in your system PATH.")
@@ -203,12 +205,16 @@ def perform_update(console: Console) -> bool:
         if proc.returncode == 0:
             console.print(proc.stdout)
             console.print("[bold green]✔ LOKI updated successfully![/bold green]")
+            console.print("[bold yellow]⚡ Notice:[/bold yellow] Restart LOKI to run the newly updated version.")
             # Invalidate cache so check reflects update
             if CACHE_FILE.exists():
                 try:
                     CACHE_FILE.unlink()
                 except Exception:
                     pass
+            if exit_on_success:
+                console.print("[dim]Exiting LOKI to apply updates...[/dim]")
+                sys.exit(0)
             return True
     except Exception as e:
         console.print(f"[dim]Upgrade attempt returned: {e}[/dim]")
@@ -228,11 +234,15 @@ def perform_update(console: Console) -> bool:
         if proc.returncode == 0:
             console.print(proc.stdout)
             console.print("[bold green]✔ LOKI updated successfully from GitHub repository![/bold green]")
+            console.print("[bold yellow]⚡ Notice:[/bold yellow] Restart LOKI to run the newly updated version.")
             if CACHE_FILE.exists():
                 try:
                     CACHE_FILE.unlink()
                 except Exception:
                     pass
+            if exit_on_success:
+                console.print("[dim]Exiting LOKI to apply updates...[/dim]")
+                sys.exit(0)
             return True
         else:
             console.print(f"[bold red]Update failed:[/bold red]\n{proc.stderr}")
