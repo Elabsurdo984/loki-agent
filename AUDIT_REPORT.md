@@ -28,12 +28,12 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **REP-02** | False-Positive "Crash Reproduced" on Internal Script Errors in `repro_test.py` | `src/loki/engine/replayer.py` | 🟠 **High** | ✅ **Resolved** |
 | **CHA-01** | Persistent Offline Network Leak on Unhandled Exceptions | `src/loki/personas/network_tormentor.py` | 🟠 **High** | Open |
 | **SEC-02** | Arbitrary File Read / Directory Traversal in Source File Resolution | `src/loki/engine/healer.py` | 🟠 **High** | Open |
-| **REP-01** | Unhandled `TypeError` / `AttributeError` on Null or String Status | `src/loki/engine/html_reporter.py` | 🟠 **High** | Open |
-| **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | Open |
-| **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | Open |
+| **REP-01** | Unhandled `TypeError` / `AttributeError` on Null or String Status | `src/loki/engine/html_reporter.py` | 🟠 **High** | ✅ **Resolved (PR #12)** |
+| **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | ✅ **Resolved (PR #15)** |
+| **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved (PR #11)** |
 | **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | Open |
 | **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | Open |
-| **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | Open |
+| **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | Partial (PID validation resolved via PR #13) |
 | **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | Open |
 | **INF-02** | Partial Kill Masking & Single-Target Limitation on Shared Ports | `src/loki/engine/infra_chaos.py` | 🟢 **Low** | Open |
 
