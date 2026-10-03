@@ -31,7 +31,7 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 | **REP-01** | Unhandled `TypeError` / `AttributeError` on Null or String Status | `src/loki/engine/html_reporter.py` | 🟠 **High** | ✅ **Resolved (PR #12)** |
 | **ENG-02** | `auth_fault_rate` and `api_chaos` Keys Silently Ignored from YAML | `src/loki/config.py` | 🟡 **Medium** | ✅ **Resolved (PR #15)** |
 | **CLI-02** | Orphan User Message on Model Failure Violating Chat Role Alternation | `src/loki/ai/chat.py` | 🟡 **Medium** | ✅ **Resolved (PR #11)** |
-| **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | Open |
+| **HLA-01** | Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment | `src/loki/engine/healer.py` | 🟡 **Medium** | ✅ **Resolved** |
 | **CLI-01** | Chat REPL Termination on `SystemExit` / `typer.Exit` | `src/loki/ai/chat.py` | 🟡 **Medium** | Open |
 | **INF-01** | TOCTOU Race Condition & Untyped Worker PID Parsing | `src/loki/engine/infra_chaos.py` | 🟡 **Medium** | Partial (PID validation resolved via PR #13) |
 | **UPD-01** | Outdated In-Memory Binary Persistence on Unix Post-Update | `src/loki/engine/updater.py` | 🟢 **Low** | Open |
@@ -186,12 +186,13 @@ A total of **14 actionable findings** and **2 architectural observations** are d
 ---
 
 #### HLA-01: Source Code Corruption via Non-Unique Snippet & Fuzzy Misalignment
-- **File**: `src/loki/engine/healer.py` (lines 215–239)
+- **File**: `src/loki/engine/healer.py` (lines 235–295)
+- **Status**: ✅ **Resolved in v1.9.1 preparation**
 - **Description**:
-  1. **Exact match ambiguity**: `apply_patch()` uses `norm_current.replace(norm_orig, norm_repl, 1)` without verifying that `norm_orig` is unique in the file. If the snippet appears in multiple locations, it blindly edits the first instance.
-  2. **Fuzzy match ambiguity & slicing defect**: In the line-by-line fallback, the algorithm breaks at the first match without checking for multiple occurrences. Furthermore, `orig_lines` filters out empty lines (`if line.strip()`), while sliding window comparison against `curr_lines` does not filter out empty lines in the source file, causing slice index offsets and corrupted replacements.
+  1. **Exact match ambiguity**: `apply_patch()` previously used `norm_current.replace(norm_orig, norm_repl, 1)` without verifying that `norm_orig` was unique in the file. If the snippet appeared in multiple locations, it blindly edited the first instance.
+  2. **Fuzzy match ambiguity & slicing defect**: In the line-by-line fallback, the algorithm broke at the first match without checking for multiple occurrences. Furthermore, `orig_lines` filtered out empty lines (`if line.strip()`), while sliding window comparison against `curr_lines` did not filter out empty lines in the source file, causing slice index offsets and corrupted replacements.
 - **Remediation**:
-  Enforce occurrence count check (`count == 1`) in both exact and fuzzy matching, and align source line slices accurately.
+  Enforce strict occurrence count check (`count == 1`) in both exact and fuzzy matching. Preserve internal empty line counts during fuzzy matching while trimming only outer whitespace padding. Abort before modifying disk if multiple ambiguous matches or empty snippets are detected. Verified with unit tests in `TestCodeHealerPatchApplication`.
 
 ---
 

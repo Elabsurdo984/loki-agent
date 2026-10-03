@@ -235,35 +235,69 @@ Do NOT output any markdown formatting or commentary outside the JSON.
 
         current_content = target_file.read_text(encoding="utf-8")
 
+        if not original_snippet.strip():
+            return {"success": False, "error": "Target snippet is empty. Aborting patch to protect code integrity."}
+
         # 1. Normalize line endings for reliable matching
         norm_current = current_content.replace("\r\n", "\n")
         norm_orig = original_snippet.replace("\r\n", "\n")
         norm_repl = replacement_snippet.replace("\r\n", "\n")
 
-        if norm_orig not in norm_current:
-            # Try stripped line-by-line fuzzy matching
-            orig_lines = [line.strip() for line in norm_orig.strip().splitlines() if line.strip()]
+        exact_count = norm_current.count(norm_orig)
+        if exact_count > 1:
+            return {
+                "success": False,
+                "error": f"Target snippet is ambiguous (found {exact_count} exact occurrences). Aborting patch to protect code integrity.",
+            }
+        elif exact_count == 1:
+            new_content = norm_current.replace(norm_orig, norm_repl, 1)
+        else:
+            # Try stripped line-by-line fuzzy matching preserving line counts
+            orig_lines = [line.strip() for line in norm_orig.splitlines()]
+            while orig_lines and not orig_lines[0]:
+                orig_lines.pop(0)
+            while orig_lines and not orig_lines[-1]:
+                orig_lines.pop()
+
+            if not orig_lines:
+                return {
+                    "success": False,
+                    "error": "Target snippet contains no searchable lines. Aborting patch to protect code integrity.",
+                }
+
             curr_lines = norm_current.splitlines()
-            
-            start_idx = -1
+            matching_indices = []
             for i in range(len(curr_lines) - len(orig_lines) + 1):
                 window = [curr_lines[i + j].strip() for j in range(len(orig_lines))]
                 if window == orig_lines:
-                    start_idx = i
-                    break
+                    matching_indices.append(i)
 
-            if start_idx == -1:
+            if not matching_indices:
                 return {
                     "success": False,
-                    "error": "Target snippet could not be uniquely located in source file. Aborting patch to protect code integrity.",
+                    "error": "Target snippet could not be located in source file. Aborting patch to protect code integrity.",
                 }
 
-            # Reconstruct content with line replacement
+            if len(matching_indices) > 1:
+                return {
+                    "success": False,
+                    "error": f"Target snippet is ambiguous (found {len(matching_indices)} fuzzy matches). Aborting patch to protect code integrity.",
+                }
+
+            start_idx = matching_indices[0]
+            end_idx = start_idx + len(orig_lines)
             before = "\n".join(curr_lines[:start_idx])
-            after = "\n".join(curr_lines[start_idx + len(orig_lines):])
-            new_content = (before + "\n" if before else "") + norm_repl + ("\n" + after if after else "")
-        else:
-            new_content = norm_current.replace(norm_orig, norm_repl, 1)
+            after = "\n".join(curr_lines[end_idx:])
+
+            parts = []
+            if before:
+                parts.append(before)
+            parts.append(norm_repl)
+            if after:
+                parts.append(after)
+            new_content = "\n".join(parts)
+            if norm_current.endswith("\n") and not new_content.endswith("\n"):
+                new_content += "\n"
 
         # 2. Create safety backup
         backup_file = target_file.with_name(f"{target_file.name}.loki.bak")

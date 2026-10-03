@@ -227,3 +227,118 @@ class TestCodeHealerSecurityContainment:
         assert res is False
         assert backup_file.exists()
 
+
+class TestCodeHealerPatchApplication:
+    def test_apply_patch_exact_match_success(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        target.write_text("def run():\n    crash_here()\n    return 0\n", encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.apply_patch(
+            target_file=target,
+            original_snippet="    crash_here()",
+            replacement_snippet="    safe_call()",
+        )
+        assert res["success"] is True
+        assert target.read_text(encoding="utf-8") == "def run():\n    safe_call()\n    return 0\n"
+        assert (tmp_path / "app.py.loki.bak").exists()
+
+    def test_apply_patch_exact_match_ambiguous_rejected(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        initial_content = "def f1():\n    return False\ndef f2():\n    return False\n"
+        target.write_text(initial_content, encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.apply_patch(
+            target_file=target,
+            original_snippet="    return False",
+            replacement_snippet="    return True",
+        )
+        assert res["success"] is False
+        assert "ambiguous" in res["error"]
+        assert "2 exact occurrences" in res["error"]
+        # Code must NOT be touched
+        assert target.read_text(encoding="utf-8") == initial_content
+        assert not (tmp_path / "app.py.loki.bak").exists()
+
+    def test_apply_patch_fuzzy_match_success_with_internal_blank_lines(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        initial_content = (
+            "def worker():\n"
+            "    # Init\n"
+            "    count = 0\n"
+            "\n"
+            "    process(count)\n"
+            "    return True\n"
+        )
+        target.write_text(initial_content, encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        # Patch with different indentation
+        orig_snippet = "count = 0\n\nprocess(count)"
+        repl_snippet = "count = 0\n\nsafe_process(count)"
+
+        res = healer.apply_patch(
+            target_file=target,
+            original_snippet=orig_snippet,
+            replacement_snippet=repl_snippet,
+        )
+        assert res["success"] is True
+        new_text = target.read_text(encoding="utf-8")
+        assert "safe_process(count)" in new_text
+        assert "def worker():" in new_text
+        assert "return True" in new_text
+
+    def test_apply_patch_fuzzy_match_ambiguous_rejected(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        initial_content = (
+            "def a():\n"
+            "    x = 1\n"
+            "    y = 2\n"
+            "def b():\n"
+            "        x = 1\n"
+            "        y = 2\n"
+        )
+        target.write_text(initial_content, encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.apply_patch(
+            target_file=target,
+            original_snippet="  x = 1\n  y = 2",
+            replacement_snippet="  x = 10\n  y = 20",
+        )
+        assert res["success"] is False
+        assert "ambiguous" in res["error"]
+        assert "2 fuzzy matches" in res["error"]
+        assert target.read_text(encoding="utf-8") == initial_content
+
+    def test_apply_patch_empty_snippet_rejected(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        target.write_text("x = 1\n", encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.apply_patch(target_file=target, original_snippet="   ", replacement_snippet="x = 2")
+        assert res["success"] is False
+        assert "empty" in res["error"]
+        assert target.read_text(encoding="utf-8") == "x = 1\n"
+
+    def test_apply_patch_snippet_not_found(self, tmp_path, monkeypatch):
+        monkeypatch.chdir(tmp_path)
+        target = tmp_path / "app.py"
+        target.write_text("x = 1\n", encoding="utf-8")
+
+        healer = CodeHealer(runs_dir=str(tmp_path / ".loki/runs"))
+        res = healer.apply_patch(
+            target_file=target,
+            original_snippet="non_existent_function()",
+            replacement_snippet="safe()",
+        )
+        assert res["success"] is False
+        assert "could not be located" in res["error"]
+
+
