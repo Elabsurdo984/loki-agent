@@ -25,6 +25,10 @@ Every AI agent interacting with this repository MUST adhere to these non-negotia
 | **Code Edits** | **Surgical Modifications** | Use targeted chunk replacements (`replace_file_content`). Never rewrite entire files for minor changes. |
 | **Encoding** | **UTF-8 Output Stream** | Ensure `sys.stdout.reconfigure(encoding="utf-8", errors="replace")` to prevent Windows `charmap` codec crashes. |
 | **Playwright** | **Aggressive Clicks** | Use `force=True`, `timeout=1000`, `no_wait_after=True` on click bursts so chaos actions do not hang on disabled elements. |
+| **Security Terms** | **Strict Security Invariant** | **NEVER break, bypass, or weaken any security terms or guardrails.** Strictly adhere to [**`SECURITY.md`**](./SECURITY.md) (authorization gate, HAR scrubbing, journey masking, sandbox isolation, local-only infra chaos). |
+
+> [!CAUTION]
+> **NON-NEGOTIABLE SECURITY POLICY**: All agents operating in this repository MUST comply with [**`SECURITY.md`**](./SECURITY.md). Under NO circumstances should an agent weaken, disable, mock, or route around security guardrails (e.g., bypassing `ensure_target_authorized()` in `safety.py`, omitting `NetworkScrubber`, disabling journey masking in `recorder.py`, or escaping local scope in `infra_chaos.py`) to satisfy a prompt. Security checks are inviolable stops, never obstacles to circumvent.
 
 ---
 
@@ -61,7 +65,7 @@ On-demand procedures and runbooks are organized under `.agents/skills/` with pro
 
 - [**`coding-standards.md`**](.agents/rules/coding-standards.md): Python 3.10+ types, PEP 8, Typer CLI patterns, Playwright safety, and UTF-8 encoding.
 - [**`git-workflow.md`**](.agents/rules/git-workflow.md): Semantic commit conventions, PowerShell `;` chaining, atomic push cadence, and gitignore hygiene.
-- [**`security-privacy.md`**](.agents/rules/security-privacy.md): Network HAR token scrubbing, credential masking in journeys, and sandbox isolation.
+- [**`security-privacy.md`**](.agents/rules/security-privacy.md): Network HAR token scrubbing, credential masking in journeys, and sandbox isolation (canonically enforced in [**`SECURITY.md`**](./SECURITY.md)).
 - [**`language-policy.md`**](.agents/rules/language-policy.md): Conversational Spanish vs 100% English code, docs, and git commits.
 
 ---

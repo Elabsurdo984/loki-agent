@@ -259,6 +259,7 @@ Contributions are warmly welcomed! **You do not need to wait for or find an open
 If you have an idea for a new feature, a new chaos persona, an engine optimization, security hardening, or extra tooling, feel free to submit a Pull Request directly.
 
 - Check out [**`CONTRIBUTING.md`**](CONTRIBUTING.md) for local environment setup, architecture guidelines, and test instructions.
+- Read [**`SECURITY.md`**](SECURITY.md) for our vulnerability disclosure policy and contributor security guardrails.
 - All PRs are verified against our unit test suite (`pytest`) and must adhere to the 100% English repository policy.
 - For newcomer-scoped tasks, browse our [`good first issue`](https://github.com/Elabsurdo984/loki-agent/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) list.
 

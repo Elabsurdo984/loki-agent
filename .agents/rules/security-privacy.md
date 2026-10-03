@@ -1,5 +1,8 @@
 # Security, Privacy & Sanitization Guardrails (`security-privacy.md`)
 
+> [!IMPORTANT]
+> The canonical security policy and non-negotiable boundaries for LOKI are defined in [**`SECURITY.md`**](../../SECURITY.md). All agents and human contributors MUST strictly comply with its terms. Under NO circumstances should any security check be weakened, bypassed, or mocked.
+
 ## 1. Network Archive Scrubbing (HAR Traces)
 - All network archives captured during chaos sessions (`network.har`) MUST be sanitized through `NetworkScrubber` before being saved to disk or committed.
 - **Sensitive Headers Redacted**: `Authorization`, `Cookie`, `Set-Cookie`, `X-Auth-Token`, `X-Api-Key`, `Proxy-Authorization`.

@@ -49,6 +49,7 @@ AI-powered features (`loki fix`, business rules evaluation, `/model` in chat) ar
 - **UTF-8 everywhere**: any new entrypoint or script that writes to the terminal should reconfigure stdout/stderr to UTF-8 (Windows defaults to a codec that chokes on emoji/unicode). Any file I/O should pass `encoding="utf-8"` explicitly. Look at the top of `src/loki/cli.py` for the pattern already in use.
 - **Playwright clicks**: chaos personas click aggressively, often on elements that are briefly disabled or obscured. Use `force=True` and a short `timeout` (e.g. `element.click(timeout=1000, force=True, no_wait_after=True)`) so a single stuck element can't hang the whole run. Always close `context`/`browser` in a `finally` block.
 - **No secrets, ever**: don't hardcode or log API keys. Network traces (`network.har`) must go through `NetworkScrubber` before being written to disk — if you add a new place that captures network/request data, make sure it's scrubbed too.
+- **Security policy & guardrails**: Review [`SECURITY.md`](./SECURITY.md) before submitting code. It documents our non-negotiable security boundaries (target authorization, HAR scrubbing, journey masking, and local infrastructure limits) and what NOT to do.
 
 ### Language
 
