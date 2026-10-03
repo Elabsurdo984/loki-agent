@@ -7,27 +7,42 @@ from typing import Dict, Any, List, Optional
 class HTMLReporter:
     """Generates standalone, responsive HTML test reports with embedded replay video and AI scorecards."""
 
+    @staticmethod
+    def _safe_int(val: Any, default: int = 0) -> int:
+        """Safely casts a value to an integer, falling back to default on None, TypeError, or ValueError."""
+        if val is None:
+            return default
+        try:
+            return int(val)
+        except (ValueError, TypeError):
+            return default
+
     @classmethod
     def generate(cls, data: Dict[str, Any], output_file: Path) -> Path:
         """Renders incident or test session data into an HTML dashboard."""
         run_id = html.escape(str(data.get("run_id", "LOKI Test Run")))
         target_url = html.escape(str(data.get("target_url", "")))
         timestamp = html.escape(str(data.get("timestamp", "")))
-        duration = f"{data.get('duration_seconds', 0):.2f}s"
+        raw_duration = data.get("duration_seconds")
+        try:
+            duration_val = float(raw_duration) if raw_duration is not None else 0.0
+        except (ValueError, TypeError):
+            duration_val = 0.0
+        duration = f"{duration_val:.2f}s"
         persona = html.escape(str(data.get("persona", "Unguided Chaos")))
         video_file = data.get("video_file")
-        crashes = data.get("crashes", [])
-        http_errors = data.get("http_errors", [])
-        actions = data.get("actions_taken", [])
-        rules_evals = data.get("rules_evaluations", [])
+        crashes = data.get("crashes") or []
+        http_errors = data.get("http_errors") or []
+        actions = data.get("actions_taken") or []
+        rules_evals = data.get("rules_evaluations") or []
         device = data.get("device")
         orientation = data.get("orientation", "portrait")
-        layout_issues = data.get("layout_issues", [])
-        concurrency = data.get("concurrency", 1)
-        concurrency_lanes = data.get("concurrency_lanes", [])
+        layout_issues = data.get("layout_issues") or []
+        concurrency = cls._safe_int(data.get("concurrency"), 1)
+        concurrency_lanes = data.get("concurrency_lanes") or []
 
         # Verdict calculation
-        has_violations = any(r.get("status") == "VIOLATED" for r in rules_evals)
+        has_violations = any(str(r.get("status") or "").upper() == "VIOLATED" for r in rules_evals)
         has_crashes = len(crashes) > 0 or len(http_errors) > 0
         has_layout_issues = len(layout_issues) > 0
 
@@ -42,7 +57,7 @@ class HTMLReporter:
         rules_rows = ""
         if rules_evals:
             for r in rules_evals:
-                st = r.get("status", "UNKNOWN").upper()
+                st = str(r.get("status") or "UNKNOWN").upper()
                 if st == "PASSED":
                     badge = '<span class="badge badge-success">✔ PASSED</span>'
                 elif st == "VIOLATED":
@@ -50,8 +65,8 @@ class HTMLReporter:
                 else:
                     badge = f'<span class="badge badge-warning">{html.escape(st)}</span>'
                 
-                rule_text = html.escape(r.get("rule", ""))
-                obs_text = html.escape(r.get("observation", ""))
+                rule_text = html.escape(str(r.get("rule") or ""))
+                obs_text = html.escape(str(r.get("observation") or ""))
                 rules_rows += f"""
                 <tr>
                     <td style="font-weight: 500;">{rule_text}</td>
@@ -144,17 +159,22 @@ class HTMLReporter:
         if concurrency > 1 and concurrency_lanes:
             success_count = sum(
                 1 for lane in concurrency_lanes
-                for r in lane.get("responses", [])
-                if r.get("status", 0) < 400
+                for r in (lane.get("responses") or [])
+                if cls._safe_int(r.get("status"), 0) < 400
             )
             lane_rows = ""
             for lane in concurrency_lanes:
-                statuses = ", ".join(f"{r['method']} {r['status']}" for r in lane.get("responses", [])) or "—"
-                crash_text = "; ".join(lane.get("crashes", [])) or "none"
+                lane_responses = lane.get("responses") or []
+                lane_crashes = lane.get("crashes") or []
+                statuses = ", ".join(
+                    f"{r.get('method', 'REQ')} {r.get('status') if r.get('status') is not None else 'N/A'}"
+                    for r in lane_responses
+                ) or "—"
+                crash_text = "; ".join(str(c) for c in lane_crashes) or "none"
                 lane_rows += f"""
                 <tr>
                     <td>Lane {lane.get('lane')}</td>
-                    <td style="font-family: monospace; font-size: 12px;">{html.escape(lane.get('selector') or 'n/a')}</td>
+                    <td style="font-family: monospace; font-size: 12px;">{html.escape(str(lane.get('selector') or 'n/a'))}</td>
                     <td style="font-size: 12px;">{html.escape(statuses)}</td>
                     <td style="font-size: 12px; color: var(--accent-red);">{html.escape(crash_text)}</td>
                 </tr>
@@ -220,13 +240,17 @@ class HTMLReporter:
 
             fault_rows = ""
             for f in api_faults:
-                method = html.escape(str(f.get("method", "GET")))
-                url = html.escape(str(f.get("url", "")))
+                method = html.escape(str(f.get("method") or "GET"))
+                url = html.escape(str(f.get("url") or ""))
                 ftype = html.escape(str(f.get("fault_type") or f.get("strategy") or "API Fault"))
-                status = f.get("injected_status") or f.get("status")
-                if status:
-                    status_cls = "badge-danger" if status >= 500 else ("badge-warning" if status >= 400 else "badge-success")
-                    status_html = f'<span class="badge {status_cls}">{status}</span>'
+                status = f.get("injected_status") if f.get("injected_status") is not None else f.get("status")
+                if status is not None and str(status).strip() != "":
+                    try:
+                        status_num = int(status)
+                        status_cls = "badge-danger" if status_num >= 500 else ("badge-warning" if status_num >= 400 else "badge-success")
+                        status_html = f'<span class="badge {status_cls}">{status_num}</span>'
+                    except (ValueError, TypeError):
+                        status_html = f'<span class="badge badge-warning">{html.escape(str(status))}</span>'
                 else:
                     status_html = '<span class="badge badge-warning">Mutated</span>'
 
@@ -296,17 +320,20 @@ class HTMLReporter:
                 if entries:
                     req_rows = ""
                     for entry in entries[:25]:
-                        req = entry.get("request", {})
-                        res = entry.get("response", {})
-                        method = html.escape(req.get("method", "GET"))
-                        req_url = html.escape(req.get("url", ""))
-                        status = res.get("status", 0)
-                        status_cls = "badge-success" if 200 <= status < 400 else ("badge-danger" if status >= 500 else "badge-warning")
-                        time_ms = f"{entry.get('time', 0):.0f}ms"
+                        req = entry.get("request") or {}
+                        res = entry.get("response") or {}
+                        method = html.escape(str(req.get("method") or "GET"))
+                        req_url = html.escape(str(req.get("url") or ""))
+                        raw_status = res.get("status")
+                        status_code = cls._safe_int(raw_status, 0)
+                        status_cls = "badge-success" if 200 <= status_code < 400 else ("badge-danger" if status_code >= 500 else "badge-warning")
+                        status_display = html.escape(str(raw_status if raw_status is not None else status_code))
+                        entry_time = entry.get("time")
+                        time_ms = f"{cls._safe_int(entry_time, 0):.0f}ms" if entry_time is not None else "0ms"
                         req_rows += f"""
                         <tr>
                             <td style="font-weight: bold; font-family: monospace;">{method}</td>
-                            <td style="text-align: center;"><span class="badge {status_cls}">{status}</span></td>
+                            <td style="text-align: center;"><span class="badge {status_cls}">{status_display}</span></td>
                             <td style="font-family: monospace; font-size: 12px; word-break: break-all;">{req_url}</td>
                             <td style="text-align: right; color: #8b949e; font-size: 12px;">{time_ms}</td>
                         </tr>
