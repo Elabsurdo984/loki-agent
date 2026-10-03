@@ -8,7 +8,7 @@ import ipaddress
 import json
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import urlparse
 
 AUTHORIZED_TARGETS_PATH = Path(".loki/authorized_targets.json")
@@ -17,7 +17,7 @@ LOCAL_HOSTNAMES = {"localhost", "127.0.0.1", "::1", "0.0.0.0"}
 
 def extract_host(url: str) -> str:
     """Extracts the bare hostname from a target URL (or a bare hostname as-is).
-    
+
     Normalizes backslashes to forward slashes to align with WHATWG URL parsing
     and browser (Chromium) navigation, preventing SSRF / authorization bypass via
     URL parser discrepancies (e.g., http://evil.com\\@localhost).
@@ -49,7 +49,7 @@ def is_local_host(url: str) -> bool:
         return False
 
 
-def _load_authorized() -> Dict[str, Any]:
+def _load_authorized() -> dict[str, Any]:
     if AUTHORIZED_TARGETS_PATH.exists():
         try:
             data = json.loads(AUTHORIZED_TARGETS_PATH.read_text(encoding="utf-8"))
@@ -61,7 +61,7 @@ def _load_authorized() -> Dict[str, Any]:
     return {"hosts": {}}
 
 
-def _save_authorized(data: Dict[str, Any]) -> None:
+def _save_authorized(data: dict[str, Any]) -> None:
     AUTHORIZED_TARGETS_PATH.parent.mkdir(parents=True, exist_ok=True)
     AUTHORIZED_TARGETS_PATH.write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -93,5 +93,5 @@ def revoke_host(host: str) -> bool:
     return existed
 
 
-def list_authorized_hosts() -> Dict[str, Any]:
+def list_authorized_hosts() -> dict[str, Any]:
     return _load_authorized()["hosts"]

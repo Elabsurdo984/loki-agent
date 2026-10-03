@@ -1,9 +1,8 @@
-import json
 import os
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Any
 
 
 class IncidentReplayer:
@@ -12,7 +11,7 @@ class IncidentReplayer:
     def __init__(self, runs_dir: str = ".loki/runs"):
         self.runs_dir = Path(runs_dir)
 
-    def get_run_dir(self, run_id: Optional[str] = None) -> Optional[Path]:
+    def get_run_dir(self, run_id: str | None = None) -> Path | None:
         """Resolves target run directory by ID or falls back to the most recent one."""
         if not self.runs_dir.exists():
             return None
@@ -34,7 +33,7 @@ class IncidentReplayer:
         "[LOKI REPRO] CRASH(ES) DETECTED",
     ]
 
-    def replay_test(self, run_dir: Path) -> Dict[str, Any]:
+    def replay_test(self, run_dir: Path) -> dict[str, Any]:
         """Executes the generated reproduction script for the incident."""
         repro_script = run_dir / "repro_test.py"
         if not repro_script.exists():
@@ -95,7 +94,7 @@ class IncidentReplayer:
         except Exception as e:
             return {"success": False, "error": str(e)}
 
-    def open_video(self, run_dir: Path) -> Dict[str, Any]:
+    def open_video(self, run_dir: Path) -> dict[str, Any]:
         """Opens the recorded video artifact in the OS default video player."""
         video_file = run_dir / "replay.webm"
         if not video_file.exists():

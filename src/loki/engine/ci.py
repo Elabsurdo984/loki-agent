@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 from src.loki.engine.sandbox import IncidentReport
 
 
@@ -16,8 +16,8 @@ class CIGate:
     @staticmethod
     def write_github_step_summary(
         report: IncidentReport,
-        evaluations: Optional[List[Dict[str, Any]]],
-        run_dir: Optional[Path],
+        evaluations: list[dict[str, Any]] | None,
+        run_dir: Path | None,
         has_violations: bool,
     ):
         """Appends a formatted GitHub Markdown summary to $GITHUB_STEP_SUMMARY if available."""

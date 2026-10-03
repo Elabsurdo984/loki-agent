@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional
+from typing import Any
 from playwright.sync_api import ElementHandle, Page
 
 # Resolves a best-effort unique CSS selector for an element handle: its id if
@@ -32,20 +32,20 @@ class BasePersona(ABC):
     def __init__(self, name: str, description: str):
         self.name = name
         self.description = description
-        self.actions_log: List[str] = []
+        self.actions_log: list[str] = []
         # Structured, replayable trace of concrete page interactions this persona
         # performed (clicks, fills, network toggles...). Consumed by IncidentReporter
         # to synthesize a repro_test.py that reproduces the *actual* session instead
         # of a generic fallback.
-        self.trace: List[Dict[str, Any]] = []
+        self.trace: list[dict[str, Any]] = []
 
     def log_action(self, action: str):
         """Records a human-readable action taken by this persona during the session."""
         self.actions_log.append(action)
 
-    def record_step(self, kind: str, selector: Optional[str] = None, value: Optional[str] = None, **extra):
+    def record_step(self, kind: str, selector: str | None = None, value: str | None = None, **extra):
         """Appends a structured, replayable step to this persona's trace."""
-        step: Dict[str, Any] = {"kind": kind}
+        step: dict[str, Any] = {"kind": kind}
         if selector:
             step["selector"] = selector
         if value is not None:

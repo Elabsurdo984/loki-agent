@@ -1,6 +1,4 @@
-﻿import pytest
-from pathlib import Path
-from src.loki.safety import (
+﻿from src.loki.safety import (
     extract_host,
     is_local_host,
     is_host_authorized,

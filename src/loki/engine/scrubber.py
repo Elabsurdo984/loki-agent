@@ -1,7 +1,7 @@
 import json
 import re
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 from urllib.parse import urlparse, parse_qsl, urlencode, urlunparse
 
 
@@ -106,7 +106,7 @@ class NetworkScrubber:
             return raw_url
 
     @classmethod
-    def scrub_headers(cls, headers: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def scrub_headers(cls, headers: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Sanitizes HTTP request and response headers."""
         scrubbed = []
         for h in headers:
@@ -130,7 +130,7 @@ class NetworkScrubber:
         return scrubbed
 
     @classmethod
-    def scrub_cookies(cls, cookies: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def scrub_cookies(cls, cookies: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Sanitizes cookies list by redacting sensitive values."""
         scrubbed = []
         for c in cookies:
@@ -141,7 +141,7 @@ class NetworkScrubber:
         return scrubbed
 
     @classmethod
-    def scrub_post_data(cls, post_data: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def scrub_post_data(cls, post_data: dict[str, Any] | None) -> dict[str, Any] | None:
         """Recursively scrubs sensitive parameters in request post data."""
         if not post_data:
             return post_data
@@ -176,7 +176,7 @@ class NetworkScrubber:
         return clean_post
 
     @classmethod
-    def scrub_response_content(cls, content: Optional[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    def scrub_response_content(cls, content: dict[str, Any] | None) -> dict[str, Any] | None:
         """Recursively scrubs sensitive parameters, tokens, and credentials in response body content."""
         if not content or not isinstance(content, dict):
             return content
@@ -248,7 +248,7 @@ class NetworkScrubber:
         return cls._scrub_json_data(data)
 
     @classmethod
-    def scrub_har_data(cls, har_json: Dict[str, Any]) -> Dict[str, Any]:
+    def scrub_har_data(cls, har_json: dict[str, Any]) -> dict[str, Any]:
         """Processes an entire HAR log structure and returns a fully sanitized copy."""
         log = har_json.get("log", {})
         entries = log.get("entries", [])
@@ -288,13 +288,13 @@ class NetworkScrubber:
         return har_json
 
     @classmethod
-    def scrub_har_file(cls, input_har_path: Path, output_har_path: Path) -> Optional[Path]:
+    def scrub_har_file(cls, input_har_path: Path, output_har_path: Path) -> Path | None:
         """Reads a raw HAR file, scrubs all sensitive data, and writes the sanitized output."""
         if not input_har_path.exists():
             return None
 
         try:
-            with open(input_har_path, "r", encoding="utf-8") as f:
+            with open(input_har_path, encoding="utf-8") as f:
                 data = json.load(f)
 
             sanitized = cls.scrub_har_data(data)
@@ -304,6 +304,6 @@ class NetworkScrubber:
                 json.dump(sanitized, f, indent=2)
 
             return output_har_path
-        except Exception as e:
+        except Exception:
             # If scrubbing fails, avoid leaking raw HAR
             return None

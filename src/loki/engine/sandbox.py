@@ -2,7 +2,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 from playwright.sync_api import sync_playwright, Page, Response, Error
 from src.loki.personas.base import BasePersona
 
@@ -11,27 +11,27 @@ from src.loki.personas.base import BasePersona
 class IncidentReport:
     """Stores all anomalies and crash data captured during an execution."""
     target_url: str
-    persona_name: Optional[str] = None
-    device_name: Optional[str] = None
-    device_requested: Optional[str] = None
+    persona_name: str | None = None
+    device_name: str | None = None
+    device_requested: str | None = None
     orientation: str = "portrait"
-    crashes: List[str] = field(default_factory=list)
-    console_errors: List[str] = field(default_factory=list)
-    http_errors: List[str] = field(default_factory=list)
-    layout_issues: List[str] = field(default_factory=list)
-    actions_taken: List[str] = field(default_factory=list)
-    replay_trace: List[Dict[str, Any]] = field(default_factory=list)
-    video_path: Optional[str] = None
-    har_path: Optional[str] = None
-    dom_snapshot: Optional[str] = None
+    crashes: list[str] = field(default_factory=list)
+    console_errors: list[str] = field(default_factory=list)
+    http_errors: list[str] = field(default_factory=list)
+    layout_issues: list[str] = field(default_factory=list)
+    actions_taken: list[str] = field(default_factory=list)
+    replay_trace: list[dict[str, Any]] = field(default_factory=list)
+    video_path: str | None = None
+    har_path: str | None = None
+    dom_snapshot: str | None = None
     duration_seconds: float = 0.0
     # Multi-tab concurrency probe: `concurrency` independent browser lanes are
     # synchronized to fire the same action at (as close as possible to) the same
     # instant, to catch server-side race conditions single-tab click bursts cannot
     # (a single page's JS event handlers never truly run concurrently).
     concurrency: int = 1
-    concurrency_lanes: List[Dict[str, Any]] = field(default_factory=list)
-    api_faults: List[Dict[str, Any]] = field(default_factory=list)
+    concurrency_lanes: list[dict[str, Any]] = field(default_factory=list)
+    api_faults: list[dict[str, Any]] = field(default_factory=list)
 
     @property
     def has_crashes(self) -> bool:
@@ -45,10 +45,10 @@ class IncidentReport:
 
 
 def resolve_device(
-    device_name: Optional[str],
+    device_name: str | None,
     orientation: str = "portrait",
-    devices: Optional[dict] = None,
-) -> tuple[Optional[str], Optional[dict]]:
+    devices: dict | None = None,
+) -> tuple[str | None, dict | None]:
     """Resolves friendly device aliases (e.g. 'iphone-15', 'pixel-7') to Playwright device descriptors."""
     if not device_name or not devices:
         return None, None
@@ -128,7 +128,7 @@ class ChaosSandbox:
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.headless = headless
 
-    def _sniff_mobile_layout(self, page: Page) -> List[str]:
+    def _sniff_mobile_layout(self, page: Page) -> list[str]:
         """Sniffs for mobile responsiveness issues such as horizontal scroll overflows and missing viewport meta tags."""
         try:
             if page.is_closed():
@@ -141,7 +141,7 @@ class ChaosSandbox:
                     document.documentElement.scrollWidth || 0,
                     document.body ? document.body.scrollWidth : 0
                 );
-                
+
                 // Detect horizontal overflow (standard mobile UX bug)
                 if (docWidth > vpWidth + 5) {
                     issues.push(`Horizontal scroll overflow detected: page content (${docWidth}px) exceeds mobile viewport width (${vpWidth}px) by ${docWidth - vpWidth}px.`);
@@ -167,9 +167,9 @@ class ChaosSandbox:
         self,
         target_url: str,
         duration: int = 5,
-        persona: Optional[BasePersona] = None,
-        journey_data: Optional[dict] = None,
-        device_name: Optional[str] = None,
+        persona: BasePersona | None = None,
+        journey_data: dict | None = None,
+        device_name: str | None = None,
         orientation: str = "portrait",
     ) -> IncidentReport:
         """Launches the target URL, applies chaotic attacks, and records evidence."""
@@ -246,7 +246,7 @@ class ChaosSandbox:
                     report.layout_issues.extend(self._sniff_mobile_layout(page))
 
                 # Guided journey execution
-                session_trace: List[Dict[str, Any]] = []
+                session_trace: list[dict[str, Any]] = []
                 if journey_data and journey_data.get("steps"):
                     report.actions_taken.append(f"Started guided journey: '{journey_data.get('name')}'")
                     for step in journey_data["steps"]:
@@ -336,10 +336,10 @@ class ChaosSandbox:
         lane: int,
         barrier: threading.Barrier,
         target_url: str,
-        selector: Optional[str],
-        device_config: Optional[dict],
+        selector: str | None,
+        device_config: dict | None,
         settle_seconds: float,
-        results: List[Dict[str, Any]],
+        results: list[dict[str, Any]],
         results_lock: threading.Lock,
     ):
         """Runs one isolated browser lane: navigate, wait for every other lane to be
@@ -350,7 +350,7 @@ class ChaosSandbox:
         Playwright API has thread affinity, so true concurrent requests require
         independent browsers driven from independent threads, not one shared page.
         """
-        lane_result: Dict[str, Any] = {
+        lane_result: dict[str, Any] = {
             "lane": lane, "selector": selector, "crashes": [], "responses": [], "final_text": None,
         }
         try:
@@ -421,8 +421,8 @@ class ChaosSandbox:
         self,
         target_url: str,
         concurrency: int,
-        selector: Optional[str] = None,
-        device_name: Optional[str] = None,
+        selector: str | None = None,
+        device_name: str | None = None,
         orientation: str = "portrait",
         settle_seconds: float = 2.0,
     ) -> IncidentReport:
@@ -439,7 +439,7 @@ class ChaosSandbox:
             report.device_name = resolved_device_name
 
         barrier = threading.Barrier(concurrency)
-        results: List[Dict[str, Any]] = []
+        results: list[dict[str, Any]] = []
         results_lock = threading.Lock()
         threads = [
             threading.Thread(

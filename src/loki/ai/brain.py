@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Any
 import litellm
 litellm.suppress_debug_info = True
 from src.loki.engine.sandbox import IncidentReport
@@ -14,7 +14,7 @@ class AIBrain:
     def __init__(self, runs_dir: str = ".loki/runs"):
         self.runs_dir = Path(runs_dir)
 
-    def get_latest_run_dir(self) -> Optional[Path]:
+    def get_latest_run_dir(self) -> Path | None:
         """Finds the most recent incident run directory."""
         if not self.runs_dir.exists():
             return None
@@ -25,7 +25,7 @@ class AIBrain:
         run_dirs.sort(key=lambda d: d.stat().st_mtime, reverse=True)
         return run_dirs[0]
 
-    def diagnose_and_fix(self, run_id: Optional[str] = None, model: Optional[str] = None) -> Dict[str, Any]:
+    def diagnose_and_fix(self, run_id: str | None = None, model: str | None = None) -> dict[str, Any]:
         """Analyzes an incident using LLM reasoning and proposes an exact patch."""
         # 1. Resolve run directory
         if run_id:
@@ -37,7 +37,7 @@ class AIBrain:
             return {"error": f"No valid incident found in '{target_dir}'"}
 
         # 2. Read incident metadata
-        with open(target_dir / "incident.json", "r", encoding="utf-8") as f:
+        with open(target_dir / "incident.json", encoding="utf-8") as f:
             incident_data = json.load(f)
 
         # 3. Read the source file most likely responsible for the crash
@@ -104,7 +104,7 @@ Please provide your answer with the following structure:
             {**base_kwargs, "model": "gemini/gemini-3.5-flash-lite"},
         ]
 
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         for kwargs in attempts:
             try:
                 response = litellm.completion(
@@ -144,7 +144,7 @@ Please provide your answer with the following structure:
         }
 
     @staticmethod
-    def _local_diagnosis(incident_data: Dict[str, Any], source_file: Optional[Path]) -> str:
+    def _local_diagnosis(incident_data: dict[str, Any], source_file: Path | None) -> str:
         """Builds an offline diagnosis strictly from the evidence stored in the incident."""
         crashes = incident_data.get("crashes") or []
         http_errors = incident_data.get("http_errors") or []
@@ -167,8 +167,8 @@ Please provide your answer with the following structure:
         self,
         report: IncidentReport,
         rules_content: str,
-        model: Optional[str] = None,
-    ) -> List[Dict[str, Any]]:
+        model: str | None = None,
+    ) -> list[dict[str, Any]]:
         """Evaluates plain English business assertions against execution evidence."""
         prompt = f"""You are LOKI's Autonomous Business Logic Verification Engine.
 Evaluate the following business assertions against the live application behavior recorded during the test session.
@@ -201,7 +201,7 @@ Respond ONLY with a valid JSON array of objects following this exact schema:
         base_kwargs = resolve_ai_connection(model)
         attempts = [base_kwargs] if customized else [base_kwargs, {**base_kwargs, "model": "gemini/gemini-flash-lite-latest"}]
 
-        last_error: Optional[Exception] = None
+        last_error: Exception | None = None
         for kwargs in attempts:
             try:
                 response = litellm.completion(

@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any
 
 class ProjectScanner:
     """Scans the repository to identify technology stacks, endpoints, and setup LOKI."""
     def __init__(self, project_root: str = "."):
         self.root = Path(project_root)
         self.loki_dir = self.root / ".loki"
-    def detect_stack(self) -> Dict[str, Any]:
+    def detect_stack(self) -> dict[str, Any]:
         """Detects languages, frameworks, and tools present in the current workspace."""
         detected = {
             "languages": [],
@@ -39,7 +39,7 @@ class ProjectScanner:
         pkg_json = self.root / "package.json"
         if pkg_json.exists():
             try:
-                with open(pkg_json, "r", encoding="utf-8") as f:
+                with open(pkg_json, encoding="utf-8") as f:
                     data = json.load(f)
                     deps = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
                     for framework in ["react", "vue", "svelte", "next", "express", "playwright"]:
@@ -48,7 +48,7 @@ class ProjectScanner:
             except Exception:
                 pass
         return detected
-    def initialize(self, default_target_url: str = "http://localhost:8000") -> Dict[str, str]:
+    def initialize(self, default_target_url: str = "http://localhost:8000") -> dict[str, str]:
         """Creates the .loki configuration directory and baseline project artifacts."""
         self.loki_dir.mkdir(parents=True, exist_ok=True)
         (self.loki_dir / "runs").mkdir(parents=True, exist_ok=True)

@@ -7,7 +7,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Any
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -18,7 +18,6 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.status import Status
 from src.loki import __version__
 
 GITHUB_REPO = "Elabsurdo984/loki-agent"
@@ -26,19 +25,19 @@ CACHE_FILE = Path(".loki/.update_cache.json")
 CACHE_TTL_SECONDS = 3600  # 1 hour cache
 
 
-def parse_version(v: str) -> Tuple[int, ...]:
+def parse_version(v: str) -> tuple[int, ...]:
     """Extracts numeric semver components from a version string (e.g. 'v1.7.0' -> (1, 7, 0))."""
     nums = re.findall(r"\d+", v)
     return tuple(int(n) for n in nums) if nums else (0, 0, 0)
 
 
-def check_for_updates(force: bool = False, timeout: float = 2.0) -> Optional[Dict[str, Any]]:
+def check_for_updates(force: bool = False, timeout: float = 2.0) -> dict[str, Any] | None:
     """Checks GitHub for newer releases of LOKI. Returns update info dict if available, else None.
     Uses a local cache file to avoid exceeding GitHub API unauthenticated rate limits."""
     # 1. Check local cache unless forced
     if not force and CACHE_FILE.exists():
         try:
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            with open(CACHE_FILE, encoding="utf-8") as f:
                 cached = json.load(f)
             cached_time = cached.get("timestamp", 0)
             if time.time() - cached_time < CACHE_TTL_SECONDS:
@@ -59,7 +58,7 @@ def check_for_updates(force: bool = False, timeout: float = 2.0) -> Optional[Dic
             pass
 
     # 2. Query GitHub API
-    latest_tag: Optional[str] = None
+    latest_tag: str | None = None
     headers = {
         "User-Agent": "LOKI-Chaos-Agent-Updater",
         "Accept": "application/vnd.github.v3+json",
@@ -116,7 +115,7 @@ def check_for_updates(force: bool = False, timeout: float = 2.0) -> Optional[Dic
     }
 
 
-def print_update_banner(console: Console, update_info: Dict[str, Any]) -> None:
+def print_update_banner(console: Console, update_info: dict[str, Any]) -> None:
     """Renders a visually prominent Rich panel notifying about the update."""
     curr = update_info["current_version"]
     latest = update_info["latest_version"]
@@ -150,7 +149,7 @@ def perform_update(console: Console, exit_on_success: bool = False) -> bool:
     if not uv_bin:
         console.print("[bold red]Error:[/bold red] 'uv' was not found in your system PATH.")
         console.print("Please install uv (https://docs.astral.sh/uv/) or update manually:")
-        console.print(f"  [cyan]git pull ; pip install -e .[/cyan]")
+        console.print("  [cyan]git pull ; pip install -e .[/cyan]")
         return False
 
     # On Windows, running executables and directories containing them are locked by the OS.

@@ -22,7 +22,7 @@ import threading
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import psutil
 
@@ -93,7 +93,7 @@ def _tracking_lock(timeout: float = 5.0):
                     pass
 
 
-def _track_workers(pids: List[int]) -> None:
+def _track_workers(pids: list[int]) -> None:
     if not pids:
         return
     with _tracking_lock():
@@ -105,7 +105,7 @@ def _track_workers(pids: List[int]) -> None:
         temp_path.replace(_STRESS_WORKERS_TRACKING_PATH)
 
 
-def _untrack_workers(pids: List[int]) -> None:
+def _untrack_workers(pids: list[int]) -> None:
     if not pids:
         return
     with _tracking_lock():
@@ -118,7 +118,7 @@ def _untrack_workers(pids: List[int]) -> None:
             _STRESS_WORKERS_TRACKING_PATH.unlink(missing_ok=True)
 
 
-def _read_tracked_workers() -> List[int]:
+def _read_tracked_workers() -> list[int]:
     if not _STRESS_WORKERS_TRACKING_PATH.exists():
         return []
     try:
@@ -137,7 +137,7 @@ def _read_tracked_workers() -> List[int]:
         return []
 
 
-def cleanup_stress_workers() -> "tuple[List[int], List[int]]":
+def cleanup_stress_workers() -> "tuple[list[int], list[int]]":
     """Kills any stress workers left tracked from a run that didn't exit cleanly
     (the parent `loki infra cpu-stress`/`memory-stress` process got killed from
     the outside before its own `finally` cleanup could run). Safe to call anytime
@@ -164,8 +164,8 @@ class InfraActionResult:
     target_description: str
     success: bool
     detail: str = ""
-    pid: Optional[int] = None
-    extra: Dict[str, Any] = field(default_factory=dict)
+    pid: int | None = None
+    extra: dict[str, Any] = field(default_factory=dict)
 
 
 class ProtectedProcessError(Exception):
@@ -183,7 +183,7 @@ def _is_protected(proc: psutil.Process) -> bool:
     return name in _PROTECTED_NAMES or stem in _PROTECTED_NAMES
 
 
-def find_processes(pid: Optional[int] = None, port: Optional[int] = None, name: Optional[str] = None) -> List[psutil.Process]:
+def find_processes(pid: int | None = None, port: int | None = None, name: str | None = None) -> list[psutil.Process]:
     """Resolves a target process by exactly one of: PID, listening port, or name substring."""
     if pid is not None:
         try:
@@ -196,7 +196,7 @@ def find_processes(pid: Optional[int] = None, port: Optional[int] = None, name: 
         # not any connection that merely happens to be using that number as its own
         # local/ephemeral port (e.g. an outbound client connection), which is a
         # different process entirely and not what "--port" is meant to target.
-        matches: List[psutil.Process] = []
+        matches: list[psutil.Process] = []
         seen_pids = set()
         for conn in psutil.net_connections(kind="inet"):
             if (
@@ -225,7 +225,7 @@ def find_processes(pid: Optional[int] = None, port: Optional[int] = None, name: 
     return []
 
 
-def kill_process(pid: Optional[int] = None, port: Optional[int] = None, name: Optional[str] = None) -> InfraActionResult:
+def kill_process(pid: int | None = None, port: int | None = None, name: str | None = None) -> InfraActionResult:
     """Kills the resolved process(es) outright — simulates a crashed/OOM-killed dependency."""
     target_desc = f"pid={pid}" if pid else (f"port={port}" if port else f"name='{name}'")
     procs = find_processes(pid=pid, port=port, name=name)
@@ -269,7 +269,7 @@ def kill_process(pid: Optional[int] = None, port: Optional[int] = None, name: Op
     )
 
 
-def pause_process(pid: Optional[int] = None, port: Optional[int] = None, name: Optional[str] = None, duration: float = 5.0) -> InfraActionResult:
+def pause_process(pid: int | None = None, port: int | None = None, name: str | None = None, duration: float = 5.0) -> InfraActionResult:
     """Suspends the resolved process(es) (SIGSTOP on POSIX, NtSuspendProcess on Windows via
     psutil) for `duration` seconds, then resumes them — simulates a hung/unresponsive
     dependency instead of a hard crash. Blocks for the duration of the pause."""
@@ -347,7 +347,7 @@ def _cpu_burner():
         pass
 
 
-def cpu_stress(duration: float = 5.0, workers: Optional[int] = None) -> InfraActionResult:
+def cpu_stress(duration: float = 5.0, workers: int | None = None) -> InfraActionResult:
     """Spawns `workers` (default: one per CPU core) busy-looping subprocesses for
     `duration` seconds to saturate every core, then kills them — simulates a noisy
     neighbor or a dependency pegging the CPU, without touching any specific process."""

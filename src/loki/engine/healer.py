@@ -1,10 +1,9 @@
 import json
 import re
 import shutil
-import sys
 import difflib
 from pathlib import Path
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Any
 
 import litellm
 litellm.suppress_debug_info = True
@@ -15,7 +14,7 @@ from src.loki.config import is_ai_customized, resolve_ai_connection
 
 class CodeHealer:
     """Autonomous Code Self-Healing & Closed-Loop Verification Engine.
-    
+
     Diagnoses incidents, synthesizes surgical code patches, safely modifies
     source code with automatic backups, and runs deterministic reproduction
     verification tests to confirm the bug is permanently eliminated.
@@ -25,7 +24,7 @@ class CodeHealer:
         self.runs_dir = Path(runs_dir)
         self.replayer = IncidentReplayer(runs_dir=runs_dir)
 
-    def resolve_source_file(self, incident_data: Dict[str, Any]) -> Optional[Path]:
+    def resolve_source_file(self, incident_data: dict[str, Any]) -> Path | None:
         """Locates the source file most likely responsible for the crash."""
         crashes = incident_data.get("crashes", [])
         combined_logs = " ".join(crashes)
@@ -47,7 +46,7 @@ class CodeHealer:
                 rel = resolved_target.relative_to(repo_root)
                 if not any(part.startswith((".", "node_modules", "dist", "build")) for part in rel.parts):
                     return rel
-            
+
             # Check relative to repo root
             file_name = clean_path.name
             if file_name and not file_name.startswith("."):
@@ -77,14 +76,14 @@ class CodeHealer:
     def synthesize_patch(
         self,
         run_dir: Path,
-        model: Optional[str] = None,
-    ) -> Dict[str, Any]:
+        model: str | None = None,
+    ) -> dict[str, Any]:
         """Uses LLM reasoning to synthesize a surgical, minimal replacement patch."""
         incident_file = run_dir / "incident.json"
         if not incident_file.exists():
             return {"success": False, "error": f"Incident file missing in '{run_dir}'"}
 
-        with open(incident_file, "r", encoding="utf-8") as f:
+        with open(incident_file, encoding="utf-8") as f:
             incident_data = json.load(f)
 
         target_file = self.resolve_source_file(incident_data)
@@ -181,7 +180,7 @@ Do NOT output any markdown formatting or commentary outside the JSON.
         return {"success": False, "error": "AI model failed to synthesize a valid surgical JSON patch."}
 
     @staticmethod
-    def _playground_fallback_patch(target_file: Path, source_code: str) -> Optional[Dict[str, Any]]:
+    def _playground_fallback_patch(target_file: Path, source_code: str) -> dict[str, Any] | None:
         """Offline patch for the bundled playground; offered only if its exact snippet is still present and unpatched."""
         code = source_code.replace("\r\n", "\n")
         original = "            // Simulates an 800ms asynchronous network transaction\n            setTimeout(() => {"
@@ -220,7 +219,7 @@ Do NOT output any markdown formatting or commentary outside the JSON.
         target_file: Path,
         original_snippet: str,
         replacement_snippet: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Safely applies a code patch to disk with automatic backup creation."""
         repo_root = Path(".").resolve()
         try:
@@ -317,7 +316,7 @@ Do NOT output any markdown formatting or commentary outside the JSON.
             "diff": diff_text,
         }
 
-    def verify_fix(self, run_dir: Path, backup_file: Optional[Path] = None, target_file: Optional[Path] = None) -> Dict[str, Any]:
+    def verify_fix(self, run_dir: Path, backup_file: Path | None = None, target_file: Path | None = None) -> dict[str, Any]:
         """Executes the reproduction script to verify whether the bug was eliminated."""
         repro_script = run_dir / "repro_test.py"
         if not repro_script.exists():

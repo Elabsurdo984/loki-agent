@@ -2,7 +2,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, List, Dict, Any
+from typing import Any
 from src.loki.engine.sandbox import IncidentReport
 from src.loki.engine.html_reporter import HTMLReporter
 from src.loki.engine.scrubber import NetworkScrubber
@@ -17,7 +17,7 @@ class IncidentReporter:
     def save_session(
         self,
         report: IncidentReport,
-        rules_evaluations: Optional[List[Dict[str, Any]]] = None,
+        rules_evaluations: list[dict[str, Any]] | None = None,
     ) -> Path:
         """Saves a complete test execution session bundle with HTML report and video."""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -89,8 +89,8 @@ class IncidentReporter:
     def save_incident(
         self,
         report: IncidentReport,
-        rules_evaluations: Optional[List[Dict[str, Any]]] = None,
-    ) -> Optional[Path]:
+        rules_evaluations: list[dict[str, Any]] | None = None,
+    ) -> Path | None:
         """Creates an incident bundle if crashes or HTTP errors were detected."""
         if not report.has_crashes:
             return None

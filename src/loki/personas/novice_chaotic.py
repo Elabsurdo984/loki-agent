@@ -1,14 +1,13 @@
 import random
 import time
-from typing import List
-from playwright.sync_api import Page, TimeoutError
+from playwright.sync_api import Page
 from src.loki.personas.base import BasePersona
 
 
 class NoviceChaoticPersona(BasePersona):
     """Simulates an erratic, non-technical user who enters boundary values, emojis, and erratic keystrokes."""
 
-    CHAOTIC_PAYLOADS: List[str] = [
+    CHAOTIC_PAYLOADS: list[str] = [
         "A" * 500,                               # Long string / buffer stress
         "🔥💣🚀👾💀💥⚡🎉",                      # Multi-byte Unicode emojis
         "<script>alert('LOKI')</script>",        # Unsanitized XSS script probe
@@ -22,7 +21,7 @@ class NoviceChaoticPersona(BasePersona):
         "../../etc/passwd",                      # Path traversal token probe
     ]
 
-    ERRATIC_KEYS: List[str] = ["Escape", "Enter", "Tab", "Backspace"]
+    ERRATIC_KEYS: list[str] = ["Escape", "Enter", "Tab", "Backspace"]
 
     def __init__(self):
         super().__init__(

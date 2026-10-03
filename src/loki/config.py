@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any
 import yaml
 
 DEFAULT_MODEL = "gemini/gemini-flash-latest"
@@ -13,7 +13,7 @@ def load_loki_config() -> dict:
     config_file = Path(".loki/config.yaml")
     if config_file.exists():
         try:
-            with open(config_file, "r", encoding="utf-8") as f:
+            with open(config_file, encoding="utf-8") as f:
                 return yaml.safe_load(f) or {}
         except Exception:
             pass
@@ -29,11 +29,11 @@ def load_loki_config() -> dict:
 # auto-heal) — not just chat — since they all resolve through this module.
 # An explicit --model flag still wins over both.
 
-def load_models_registry() -> Dict[str, Any]:
+def load_models_registry() -> dict[str, Any]:
     """Reads the model profile registry, or an empty one if it doesn't exist yet."""
     if MODELS_REGISTRY_PATH.exists():
         try:
-            with open(MODELS_REGISTRY_PATH, "r", encoding="utf-8") as f:
+            with open(MODELS_REGISTRY_PATH, encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict):
                     data.setdefault("active", None)
@@ -44,17 +44,17 @@ def load_models_registry() -> Dict[str, Any]:
     return {"active": None, "profiles": []}
 
 
-def save_models_registry(registry: Dict[str, Any]) -> None:
+def save_models_registry(registry: dict[str, Any]) -> None:
     MODELS_REGISTRY_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(MODELS_REGISTRY_PATH, "w", encoding="utf-8") as f:
         json.dump(registry, f, indent=2)
 
 
-def list_model_profiles() -> List[Dict[str, Any]]:
+def list_model_profiles() -> list[dict[str, Any]]:
     return load_models_registry().get("profiles", [])
 
 
-def get_model_profile(name: str) -> Optional[Dict[str, Any]]:
+def get_model_profile(name: str) -> dict[str, Any] | None:
     name_lower = name.lower()
     for profile in list_model_profiles():
         if str(profile.get("name", "")).lower() == name_lower:
@@ -62,7 +62,7 @@ def get_model_profile(name: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def get_active_model_profile() -> Optional[Dict[str, Any]]:
+def get_active_model_profile() -> dict[str, Any] | None:
     registry = load_models_registry()
     active_name = registry.get("active")
     if not active_name:
@@ -71,11 +71,11 @@ def get_active_model_profile() -> Optional[Dict[str, Any]]:
 
 
 def add_model_profile(
-    name: str, model: str, api_base: Optional[str] = None, api_key_env: Optional[str] = None
-) -> Dict[str, Any]:
+    name: str, model: str, api_base: str | None = None, api_key_env: str | None = None
+) -> dict[str, Any]:
     """Adds (or updates) a named profile and returns it. Does not activate it."""
     registry = load_models_registry()
-    profile: Dict[str, Any] = {"name": name, "model": model}
+    profile: dict[str, Any] = {"name": name, "model": model}
     if api_base:
         profile["api_base"] = api_base
     if api_key_env:
@@ -103,7 +103,7 @@ def remove_model_profile(name: str) -> bool:
     return existed
 
 
-def activate_model_profile(name: str) -> Optional[Dict[str, Any]]:
+def activate_model_profile(name: str) -> dict[str, Any] | None:
     """Marks an existing profile as active. Returns it, or None if no such profile exists."""
     profile = get_model_profile(name)
     if not profile:
@@ -124,7 +124,7 @@ def clear_active_model_profile() -> None:
 
 # --- Resolution: explicit arg > active registry profile > config.yaml > default
 
-def resolve_model(explicit: Optional[str] = None) -> str:
+def resolve_model(explicit: str | None = None) -> str:
     """Returns a LiteLLM model id: explicit value, else the active `/model` profile
     (.loki/models.json), else .loki/config.yaml's `ai:` section, else the default."""
     if explicit:
@@ -141,7 +141,7 @@ def resolve_model(explicit: Optional[str] = None) -> str:
     return model
 
 
-def model_source(explicit: Optional[str] = None) -> str:
+def model_source(explicit: str | None = None) -> str:
     """Human-readable description of where the resolved model is coming from."""
     if explicit:
         return "--model flag"
@@ -154,7 +154,7 @@ def model_source(explicit: Optional[str] = None) -> str:
     return "bundled default"
 
 
-def is_ai_customized(explicit_model: Optional[str] = None) -> bool:
+def is_ai_customized(explicit_model: str | None = None) -> bool:
     """True once the caller, the active `/model` profile, or .loki/config.yaml points
     at anything other than LOKI's bundled Gemini default. When true, LOKI must try
     exactly what was configured and never silently swap in a different provider's model."""
@@ -164,7 +164,7 @@ def is_ai_customized(explicit_model: Optional[str] = None) -> bool:
     return bool(ai.get("model") or ai.get("api_base") or ai.get("api_key_env"))
 
 
-def resolve_ai_connection(explicit_model: Optional[str] = None) -> Dict[str, Any]:
+def resolve_ai_connection(explicit_model: str | None = None) -> dict[str, Any]:
     """Resolves everything needed to call ANY LiteLLM-compatible AI provider — not
     just Gemini/OpenAI/Anthropic — including a fully custom or self-hosted
     OpenAI-compatible endpoint (Ollama, vLLM, LM Studio, an internal gateway,
@@ -193,7 +193,7 @@ def resolve_ai_connection(explicit_model: Optional[str] = None) -> Dict[str, Any
 
     active = get_active_model_profile()
     if active:
-        kwargs: Dict[str, Any] = {"model": active["model"]}
+        kwargs: dict[str, Any] = {"model": active["model"]}
         if active.get("api_base"):
             kwargs["api_base"] = active["api_base"]
         if active.get("api_key_env"):
@@ -219,10 +219,10 @@ def resolve_ai_connection(explicit_model: Optional[str] = None) -> Dict[str, Any
 
 
 def resolve_api_chaos_config(
-    cli_enabled: Optional[bool] = None,
-    fault_rate: Optional[float] = None,
-    auth_chaos: Optional[bool] = None,
-    auth_fault_rate: Optional[float] = None,
+    cli_enabled: bool | None = None,
+    fault_rate: float | None = None,
+    auth_chaos: bool | None = None,
+    auth_fault_rate: float | None = None,
 ) -> Any:
     """
     Builds an ApiChaosConfig by overlaying CLI arguments on top of .loki/config.yaml

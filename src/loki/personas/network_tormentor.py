@@ -1,6 +1,6 @@
 import time
 import random
-from typing import Optional, List, Dict, Any
+from typing import Any
 from playwright.sync_api import Page
 from src.loki.personas.base import BasePersona
 from src.loki.engine.api_chaos import ApiChaosEngine, ApiChaosConfig
@@ -13,14 +13,14 @@ class NetworkTormentorPersona(BasePersona):
     (5xx errors, corrupted JSON, dropped keys, surgical latency).
     """
 
-    def __init__(self, api_chaos_config: Optional[ApiChaosConfig] = None):
+    def __init__(self, api_chaos_config: ApiChaosConfig | None = None):
         super().__init__(
             name="NetworkTormentor",
             description="Injects high network latency, sudden connection loss, and semantic API fault corruption to expose UI hangs.",
         )
         self.api_chaos = ApiChaosEngine(api_chaos_config or ApiChaosConfig())
 
-    def get_api_faults(self) -> List[Dict[str, Any]]:
+    def get_api_faults(self) -> list[dict[str, Any]]:
         """Returns mock route definitions for all API faults injected during the run."""
         return self.api_chaos.generate_repro_routes()
 

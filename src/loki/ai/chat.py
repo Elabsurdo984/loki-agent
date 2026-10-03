@@ -2,7 +2,8 @@ import json
 import os
 import sys
 from pathlib import Path
-from typing import Callable, List, Dict, Any, Optional
+from typing import Any
+from collections.abc import Callable
 import typer
 import litellm
 litellm.suppress_debug_info = True
@@ -25,7 +26,6 @@ from src.loki.engine.updater import check_for_updates, print_update_banner, perf
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.markdown import Markdown
 from rich.status import Status
 
 from prompt_toolkit.application import Application
@@ -60,12 +60,12 @@ class _SlashNestedCompleter(NestedCompleter):
 class LokiChatSession:
     """Interactive conversational terminal REPL for pair QA testing, incident queries, and advice."""
 
-    def __init__(self, model: Optional[str] = None, runs_dir: str = ".loki/runs"):
+    def __init__(self, model: str | None = None, runs_dir: str = ".loki/runs"):
         self._explicit_model = model
         self.model = resolve_model(model)
         self.runs_dir = Path(runs_dir)
         self.console = Console()
-        self.history: List[Dict[str, str]] = []
+        self.history: list[dict[str, str]] = []
         self._input_history = InMemoryHistory()
         self._use_boxed_prompt = True
 
@@ -111,7 +111,7 @@ class LokiChatSession:
             meta_file = d / "incident.json"
             if meta_file.exists():
                 try:
-                    with open(meta_file, "r", encoding="utf-8") as f:
+                    with open(meta_file, encoding="utf-8") as f:
                         data = json.load(f)
                     crashes_cnt = data.get("unique_crashes_count", 0)
                     rules_cnt = len(data.get("rules_evaluations", []))
@@ -150,7 +150,7 @@ class LokiChatSession:
             meta_file = d / "incident.json"
             if meta_file.exists():
                 try:
-                    with open(meta_file, "r", encoding="utf-8") as f:
+                    with open(meta_file, encoding="utf-8") as f:
                         data = json.load(f)
                     crashes = data.get("unique_crashes_count", 0)
                     rules = data.get("rules_evaluations", [])
@@ -319,7 +319,7 @@ class LokiChatSession:
         tokens = args.split()
         url = None
         persona_raw = None
-        kwargs: Dict[str, Any] = dict(
+        kwargs: dict[str, Any] = dict(
             duration=None, headed=False, swarm=False, journey=None,
             rules=True, report_html=True, open_report=False, ci=False,
             strict=False, auto_heal=False, device=None, orientation="portrait",
@@ -332,10 +332,10 @@ class LokiChatSession:
             t = tokens[i]
             low = t.lower()
 
-            def _next_value() -> Optional[str]:
+            def _next_value(flag: str = t) -> str | None:
                 nonlocal i
                 if i + 1 >= len(tokens):
-                    self.console.print(f"[yellow]Missing value after {t}[/yellow]")
+                    self.console.print(f"[yellow]Missing value after {flag}[/yellow]")
                     return None
                 i += 1
                 return tokens[i]
@@ -530,7 +530,7 @@ class LokiChatSession:
     def _build_completer(self) -> NestedCompleter:
         """Builds a fresh Tab/as-you-type completer, including saved /model profile names."""
         profile_names = [p["name"] for p in list_model_profiles()]
-        model_targets: Dict[str, Any] = {name: None for name in profile_names}
+        model_targets: dict[str, Any] = {name: None for name in profile_names}
         model_targets.update({
             "add": None,
             "remove": {name: None for name in profile_names} if profile_names else None,
@@ -768,7 +768,7 @@ Project & Testing Context:
             reported_error = False
             for kwargs in attempts:
                 try:
-                    with Status(f"[bold yellow]LOKI is thinking...[/bold yellow]", console=self.console):
+                    with Status("[bold yellow]LOKI is thinking...[/bold yellow]", console=self.console):
                         stream_response = litellm.completion(
                             messages=active_messages,
                             stream=True,

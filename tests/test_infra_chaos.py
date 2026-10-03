@@ -1,12 +1,10 @@
 import json
-import pytest
 from pathlib import Path
 from src.loki.engine.infra_chaos import (
     _read_tracked_workers,
     _track_workers,
     _untrack_workers,
     cleanup_stress_workers,
-    _STRESS_WORKERS_TRACKING_PATH,
 )
 
 

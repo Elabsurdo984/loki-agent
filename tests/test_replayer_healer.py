@@ -1,7 +1,6 @@
 from pathlib import Path
 from unittest.mock import MagicMock
 import subprocess
-import pytest
 
 from src.loki.engine.replayer import IncidentReplayer
 from src.loki.engine.healer import CodeHealer
@@ -165,7 +164,7 @@ class TestCodeHealerSecurityContainment:
 
             incident = {
                 "crashes": [
-                    f"Error in ../sensitive_secret.py: line 10 in <module>",
+                    "Error in ../sensitive_secret.py: line 10 in <module>",
                 ]
             }
 

@@ -1,4 +1,4 @@
-name: ⚡ LOKI Quality & Chaos Gate
+name: ⚡ LOKI CI — Quality, Testing & Chaos Suite
 
 on:
   push:
@@ -7,10 +7,27 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  chaos-gate:
-    name: Run LOKI Chaos & Rule Verification
+  lint:
+    name: 🔍 Lint & Code Standards (Ruff)
     runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ⚡ Run Ruff Linter
+        uses: astral-sh/ruff-action@v3
+        with:
+          args: "check src tests"
+
+  chaos-gate:
+    name: 🌪️ Synthetic Chaos & Rule Verification (Playground)
+    runs-on: ubuntu-latest
+    needs: [lint]
     permissions:
       contents: read
       pull-requests: write

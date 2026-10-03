@@ -1,9 +1,7 @@
 from enum import Enum
 from pathlib import Path
-from typing import Optional
 import sys
 import typer
-import yaml
 import json
 
 # Ensure standard output streams support UTF-8 on Windows
@@ -182,10 +180,10 @@ def infra_list():
 
 @infra_app.command("kill")
 def infra_kill(
-    pid: Optional[int] = typer.Option(None, "--pid", help="Target process by exact PID"),
-    port: Optional[int] = typer.Option(None, "--port", help="Target the process listening on this local port"),
-    name: Optional[str] = typer.Option(None, "--name", help="Target the first process whose name contains this substring"),
-    container: Optional[str] = typer.Option(None, "--container", help="Kill a local Docker container by name/ID instead of a process"),
+    pid: int | None = typer.Option(None, "--pid", help="Target process by exact PID"),
+    port: int | None = typer.Option(None, "--port", help="Target the process listening on this local port"),
+    name: str | None = typer.Option(None, "--name", help="Target the first process whose name contains this substring"),
+    container: str | None = typer.Option(None, "--container", help="Kill a local Docker container by name/ID instead of a process"),
 ):
     """Kills a local process or Docker container outright — simulates a crashed/OOM-killed dependency."""
     if container:
@@ -199,10 +197,10 @@ def infra_kill(
 
 @infra_app.command("pause")
 def infra_pause(
-    pid: Optional[int] = typer.Option(None, "--pid", help="Target process by exact PID"),
-    port: Optional[int] = typer.Option(None, "--port", help="Target the process listening on this local port"),
-    name: Optional[str] = typer.Option(None, "--name", help="Target the first process whose name contains this substring"),
-    container: Optional[str] = typer.Option(None, "--container", help="Pause a local Docker container by name/ID instead of a process"),
+    pid: int | None = typer.Option(None, "--pid", help="Target process by exact PID"),
+    port: int | None = typer.Option(None, "--port", help="Target the process listening on this local port"),
+    name: str | None = typer.Option(None, "--name", help="Target the first process whose name contains this substring"),
+    container: str | None = typer.Option(None, "--container", help="Pause a local Docker container by name/ID instead of a process"),
     duration: float = typer.Option(5.0, "--duration", "-d", help="Seconds to keep it suspended before resuming"),
 ):
     """Suspends a local process (or pauses a container) for --duration seconds then resumes it —
@@ -221,7 +219,7 @@ def infra_pause(
 @infra_app.command("cpu-stress")
 def infra_cpu_stress(
     duration: float = typer.Option(5.0, "--duration", "-d", help="Seconds to hold the CPU saturated"),
-    workers: Optional[int] = typer.Option(None, "--workers", "-w", help="Busy-loop workers to spawn (default: one per CPU core)"),
+    workers: int | None = typer.Option(None, "--workers", "-w", help="Busy-loop workers to spawn (default: one per CPU core)"),
 ):
     """Saturates every CPU core for --duration seconds — simulates a noisy-neighbor CPU spike
     competing with the target for the machine's compute, without touching any specific process."""
@@ -352,10 +350,10 @@ def init(
 
 @app.command()
 def run(
-    url: Optional[str] = typer.Argument(None, help="The target URL to test (defaults to .loki/config.yaml if omitted)"),
-    duration: Optional[int] = typer.Option(None, "--duration", "-d", help="Execution duration in seconds"),
+    url: str | None = typer.Argument(None, help="The target URL to test (defaults to .loki/config.yaml if omitted)"),
+    duration: int | None = typer.Option(None, "--duration", "-d", help="Execution duration in seconds"),
     headed: bool = typer.Option(False, "--headed", help="Run browser in visible mode (default is headless)"),
-    persona: Optional[PersonaChoice] = typer.Option(
+    persona: PersonaChoice | None = typer.Option(
         None,
         "--persona",
         "-p",
@@ -367,7 +365,7 @@ def run(
         "-s",
         help="Run Swarm Mode (orchestrates all chaos personas in coordinated assault waves)",
     ),
-    journey: Optional[str] = typer.Option(
+    journey: str | None = typer.Option(
         None,
         "--journey",
         "-j",
@@ -406,7 +404,7 @@ def run(
         "-H",
         help="Autonomously synthesize, apply, and verify a code patch if crashes are detected",
     ),
-    device: Optional[str] = typer.Option(
+    device: str | None = typer.Option(
         None,
         "--device",
         "-m",
@@ -426,7 +424,7 @@ def run(
              "to probe for server-side race conditions (double charges, oversold inventory). Runs as its "
              "own dedicated mode instead of the persona-based chaos attack when > 1.",
     ),
-    target_selector: Optional[str] = typer.Option(
+    target_selector: str | None = typer.Option(
         None,
         "--target-selector",
         help="CSS selector for the --concurrency probe's synchronized click (defaults to the journey's "
@@ -438,17 +436,17 @@ def run(
         help="Confirms you own this target or have explicit permission to test it. Required (or an "
              "interactive confirmation) for any non-localhost URL; skips that prompt for scripted/CI use.",
     ),
-    api_chaos: Optional[bool] = typer.Option(
+    api_chaos: bool | None = typer.Option(
         None,
         "--api-chaos/--no-api-chaos",
         help="Enable or disable API semantic fault injection (500s, corrupt JSON, schema stripping)",
     ),
-    fault_rate: Optional[float] = typer.Option(
+    fault_rate: float | None = typer.Option(
         None,
         "--fault-rate",
         help="Probability (0.0 to 1.0) of injecting faults into eligible API requests (default: 0.3)",
     ),
-    auth_chaos: Optional[bool] = typer.Option(
+    auth_chaos: bool | None = typer.Option(
         None,
         "--auth-chaos/--no-auth-chaos",
         help="Enable or disable mid-flight auth token invalidation and cookie eviction (default: enabled)",
@@ -469,7 +467,7 @@ def run(
             console.print(f"[bold red]Error:[/bold red] Journey blueprint '{journey}' not found in .loki/journeys/")
             raise typer.Exit(code=1)
         try:
-            with open(journey_path, "r", encoding="utf-8") as f:
+            with open(journey_path, encoding="utf-8") as f:
                 journey_data = json.load(f)
         except Exception as e:
             console.print(f"[bold red]Error reading journey blueprint:[/bold red] {e}")
@@ -739,16 +737,16 @@ def run(
 
 @app.command()
 def fix(
-    run_id: Optional[str] = typer.Argument(None, help="Specific run ID to diagnose (defaults to latest incident)"),
+    run_id: str | None = typer.Argument(None, help="Specific run ID to diagnose (defaults to latest incident)"),
     apply: bool = typer.Option(False, "--apply", "-a", help="Autonomously apply the surgical patch to source code and verify"),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip interactive confirmation prompt when applying patch"),
     verify: bool = typer.Option(True, "--verify/--no-verify", help="Execute deterministic reproduction test to verify fix"),
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="AI model via LiteLLM (defaults to .loki/config.yaml ai.model)"),
+    model: str | None = typer.Option(None, "--model", "-m", help="AI model via LiteLLM (defaults to .loki/config.yaml ai.model)"),
 ):
     """Analyze a captured crash with AI reasoning and generate an automated fix."""
     brain = AIBrain()
     healer = CodeHealer()
-    
+
     with Status("[bold yellow]LOKI AI Brain is analyzing crash evidence...[/bold yellow]", console=console):
         result = brain.diagnose_and_fix(run_id=run_id, model=model)
     if "error" in result and not result.get("diagnosis"):
@@ -784,7 +782,7 @@ def fix(
                 f"💡 [bold cyan]Explanation:[/bold cyan] {patch.get('explanation')}\n\n"
                 f"[bold yellow]Original Snippet:[/bold yellow]\n```\n{patch.get('original_snippet')}\n```\n\n"
                 f"[bold green]Replacement Snippet:[/bold green]\n```\n{patch.get('replacement_snippet')}\n```",
-                title=f"[bold yellow]🩹 Proposed Surgical Patch[/bold yellow]",
+                title="[bold yellow]🩹 Proposed Surgical Patch[/bold yellow]",
                 border_style="yellow",
             )
         )
@@ -829,7 +827,7 @@ def fix(
 @app.command()
 def record(
     name: str = typer.Argument("checkout_flow", help="Descriptive identifier for this user journey"),
-    url: Optional[str] = typer.Option(None, "--url", "-u", help="Target URL (defaults to .loki/config.yaml if omitted)"),
+    url: str | None = typer.Option(None, "--url", "-u", help="Target URL (defaults to .loki/config.yaml if omitted)"),
 ):
     """Interactively record a human user journey and save it as a test blueprint."""
     config = load_loki_config()
@@ -859,7 +857,7 @@ def record(
     journey_path = recorder.record_journey(start_url=resolved_url, journey_name=name)
 
     # Read recorded journey summary
-    with open(journey_path, "r", encoding="utf-8") as f:
+    with open(journey_path, encoding="utf-8") as f:
         data = json.load(f)
 
     steps_count = data.get("total_steps", 0)
@@ -875,7 +873,7 @@ def record(
 
 @app.command()
 def replay(
-    run_id: Optional[str] = typer.Argument(None, help="Incident run ID to replay (defaults to most recent)"),
+    run_id: str | None = typer.Argument(None, help="Incident run ID to replay (defaults to most recent)"),
     video: bool = typer.Option(False, "--video", "-v", help="Open the recorded video instead of executing test"),
 ):
     """Replay a captured incident deterministically or open its recorded video."""
@@ -918,7 +916,7 @@ def replay(
 
 @app.command()
 def report(
-    run_id: Optional[str] = typer.Argument(None, help="Run ID to view (e.g. run_20260927_211530). Defaults to latest run."),
+    run_id: str | None = typer.Argument(None, help="Run ID to view (e.g. run_20260927_211530). Defaults to latest run."),
     open_browser: bool = typer.Option(True, "--open/--no-open", "-o/-no", help="Open the report in the default browser"),
 ):
     """Generate or open the interactive visual HTML report for a test run."""
@@ -946,7 +944,7 @@ def report(
     # If report.html doesn't exist yet, generate it dynamically from incident.json
     if not html_file.exists() and incident_file.exists():
         try:
-            with open(incident_file, "r", encoding="utf-8") as f:
+            with open(incident_file, encoding="utf-8") as f:
                 data = json.load(f)
             HTMLReporter.generate(data, html_file)
         except Exception as e:
@@ -973,7 +971,7 @@ def report(
 
 @app.command()
 def chat(
-    model: Optional[str] = typer.Option(None, "--model", "-m", help="AI model via LiteLLM (defaults to .loki/config.yaml ai.model)"),
+    model: str | None = typer.Option(None, "--model", "-m", help="AI model via LiteLLM (defaults to .loki/config.yaml ai.model)"),
 ):
     """Launch interactive conversational QA and chaos testing assistant REPL."""
     session = LokiChatSession(model=model)

@@ -1,7 +1,7 @@
 import html
 import json
 from pathlib import Path
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 
 class HTMLReporter:
@@ -18,7 +18,7 @@ class HTMLReporter:
             return default
 
     @classmethod
-    def generate(cls, data: Dict[str, Any], output_file: Path) -> Path:
+    def generate(cls, data: dict[str, Any], output_file: Path) -> Path:
         """Renders incident or test session data into an HTML dashboard."""
         run_id = html.escape(str(data.get("run_id", "LOKI Test Run")))
         target_url = html.escape(str(data.get("target_url", "")))
@@ -48,10 +48,8 @@ class HTMLReporter:
 
         if has_crashes or has_violations or has_layout_issues:
             verdict_badge = '<span class="badge badge-danger">FAIL / ISSUES DETECTED</span>'
-            verdict_border = "border-danger"
         else:
             verdict_badge = '<span class="badge badge-success">ALL CHECKS PASSED</span>'
-            verdict_border = "border-success"
 
         # Rules table rows
         rules_rows = ""
@@ -64,7 +62,7 @@ class HTMLReporter:
                     badge = '<span class="badge badge-danger">❌ VIOLATED</span>'
                 else:
                     badge = f'<span class="badge badge-warning">{html.escape(st)}</span>'
-                
+
                 rule_text = html.escape(str(r.get("rule") or ""))
                 obs_text = html.escape(str(r.get("observation") or ""))
                 rules_rows += f"""
@@ -228,7 +226,7 @@ class HTMLReporter:
                 </div>
                 """
 
-            type_counts: Dict[str, int] = {}
+            type_counts: dict[str, int] = {}
             for f in api_faults:
                 ft = str(f.get("fault_type") or f.get("strategy") or "API Fault")
                 type_counts[ft] = type_counts.get(ft, 0) + 1
@@ -314,7 +312,7 @@ class HTMLReporter:
         har_file = data.get("har_file")
         if har_file and (output_file.parent / har_file).exists():
             try:
-                with open(output_file.parent / har_file, "r", encoding="utf-8") as f:
+                with open(output_file.parent / har_file, encoding="utf-8") as f:
                     har_data = json.load(f)
                 entries = har_data.get("log", {}).get("entries", [])
                 if entries:

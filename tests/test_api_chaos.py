@@ -1,6 +1,5 @@
 import json
 from unittest.mock import MagicMock
-import pytest
 
 from src.loki.engine.api_chaos import (
     ApiChaosConfig,
@@ -321,7 +320,7 @@ class TestReporterReproIntegration:
         incident_file = run_dir / "incident.json"
         assert incident_file.exists()
 
-        with open(incident_file, "r", encoding="utf-8") as f:
+        with open(incident_file, encoding="utf-8") as f:
             metadata = json.load(f)
 
         assert "api_faults" in metadata

@@ -14,7 +14,7 @@ import json
 import random
 import time
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any
 from urllib.parse import urlparse
 
 from playwright.sync_api import BrowserContext, Page, Request, Route
@@ -26,16 +26,16 @@ class ApiChaosConfig:
     """Configuration options for the API Chaos Engine."""
     enabled: bool = True
     fault_rate: float = 0.3  # Probability [0.0 - 1.0] of injecting fault into an eligible request
-    fault_types: List[str] = field(default_factory=lambda: [
+    fault_types: list[str] = field(default_factory=lambda: [
         "status_code",
         "corrupt_json",
         "delay",
         "empty_response",
         "schema_strip",
     ])
-    status_codes: List[int] = field(default_factory=lambda: [500, 502, 503, 504])
-    delay_range_ms: Tuple[int, int] = (1500, 3500)
-    api_patterns: List[str] = field(default_factory=lambda: [
+    status_codes: list[int] = field(default_factory=lambda: [500, 502, 503, 504])
+    delay_range_ms: tuple[int, int] = (1500, 3500)
+    api_patterns: list[str] = field(default_factory=lambda: [
         "**/api/**",
         "**/graphql**",
         "**/v1/**",
@@ -45,7 +45,7 @@ class ApiChaosConfig:
         "**/services/**",
         "**/*.json*",
     ])
-    ignored_extensions: List[str] = field(default_factory=lambda: [
+    ignored_extensions: list[str] = field(default_factory=lambda: [
         ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg",
         ".woff", ".woff2", ".ttf", ".eot", ".ico", ".map", ".html"
     ])
@@ -54,7 +54,7 @@ class ApiChaosConfig:
     # Auth & Session Chaos Settings
     auth_chaos_enabled: bool = True
     auth_fault_rate: float = 0.4  # Probability of attacking authenticated requests
-    auth_fault_types: List[str] = field(default_factory=lambda: [
+    auth_fault_types: list[str] = field(default_factory=lambda: [
         "token_invalidation",
         "401_unauthorized",
         "403_forbidden",
@@ -68,12 +68,12 @@ class ApiFaultEvent:
     url: str
     method: str
     fault_type: str  # "status_code", "corrupt_json", "delay", "empty_response", "schema_strip"
-    original_status: Optional[int] = None
-    injected_status: Optional[int] = None
-    details: Dict[str, Any] = field(default_factory=dict)
+    original_status: int | None = None
+    injected_status: int | None = None
+    details: dict[str, Any] = field(default_factory=dict)
     timestamp: float = field(default_factory=time.time)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "url": self.url,
             "method": self.method,
@@ -149,7 +149,7 @@ def mutate_json_payload(data: Any, monster_len: int = 5000) -> Any:
     return None
 
 
-def strip_schema_keys(data: Any) -> Tuple[Any, List[str]]:
+def strip_schema_keys(data: Any) -> tuple[Any, list[str]]:
     """
     Strips top-level or critical keys from JSON to expose missing optional chaining (?.),
     returning the modified data and the list of stripped keys.
@@ -174,10 +174,10 @@ class ApiChaosEngine:
     to inject semantic API faults, payload corruption, and latency spikes.
     """
 
-    def __init__(self, config: Optional[ApiChaosConfig] = None):
+    def __init__(self, config: ApiChaosConfig | None = None):
         self.config = config or ApiChaosConfig()
-        self.injected_faults: List[ApiFaultEvent] = []
-        self._attached_targets: Set[Union[Page, BrowserContext]] = set()
+        self.injected_faults: list[ApiFaultEvent] = []
+        self._attached_targets: set[Page | BrowserContext] = set()
 
     def is_eligible(self, request: Request) -> bool:
         """Determines if an outgoing network request is eligible for API chaos injection."""
@@ -206,7 +206,7 @@ class ApiChaosEngine:
 
         return False
 
-    def attach(self, target: Union[Page, BrowserContext]) -> None:
+    def attach(self, target: Page | BrowserContext) -> None:
         """Attaches route interception to a Playwright Page or BrowserContext."""
         if not self.config.enabled:
             return
@@ -330,7 +330,6 @@ class ApiChaosEngine:
         try:
             response = route.fetch()
             body_bytes = response.body()
-            content_type = response.headers.get("content-type", "").lower()
 
             try:
                 parsed_json = json.loads(body_bytes.decode("utf-8"))
@@ -533,7 +532,7 @@ class ApiChaosEngine:
             headers={"x-loki-fault": f"auth_{status}"},
         )
 
-    def evict_session_cookies(self, page_or_context: Union[Page, BrowserContext]) -> int:
+    def evict_session_cookies(self, page_or_context: Page | BrowserContext) -> int:
         """
         Evicts all cookies from the current browser context mid-session,
         testing frontend resilience to sudden session loss.
@@ -554,7 +553,7 @@ class ApiChaosEngine:
         except Exception:
             return 0
 
-    def sniff_white_screen_or_freeze(self, page: Page) -> Optional[Dict[str, Any]]:
+    def sniff_white_screen_or_freeze(self, page: Page) -> dict[str, Any] | None:
         """
         Detects silent frontend failures caused by unhandled auth drops or API faults:
         - Completely blank page (white screen)
@@ -597,9 +596,9 @@ class ApiChaosEngine:
         except Exception:
             return None
 
-    def get_summary(self) -> Dict[str, Any]:
+    def get_summary(self) -> dict[str, Any]:
         """Returns statistical telemetry of all injected faults in the current session."""
-        by_type: Dict[str, int] = {}
+        by_type: dict[str, int] = {}
         for f in self.injected_faults:
             by_type[f.fault_type] = by_type.get(f.fault_type, 0) + 1
 
@@ -610,7 +609,7 @@ class ApiChaosEngine:
             "events": [f.to_dict() for f in self.injected_faults],
         }
 
-    def generate_repro_routes(self) -> List[Dict[str, Any]]:
+    def generate_repro_routes(self) -> list[dict[str, Any]]:
         """
         Produces serializable mock route descriptions for deterministic reproduction
         in repro_test.py.

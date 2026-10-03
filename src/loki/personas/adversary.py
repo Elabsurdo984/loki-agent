@@ -1,6 +1,5 @@
 import time
 import random
-from typing import List
 from playwright.sync_api import Page
 from src.loki.personas.base import BasePersona
 
@@ -128,7 +127,7 @@ class AdversaryPersona(BasePersona):
                 f"HTTP {hit['status']} with a token/authentication field in the response."
             )
 
-    def _force_enable_disabled_controls(self, page: Page) -> List[str]:
+    def _force_enable_disabled_controls(self, page: Page) -> list[str]:
         """Strips disabled and aria-disabled attributes from DOM elements via JavaScript."""
         script = """
         () => {
@@ -149,7 +148,7 @@ class AdversaryPersona(BasePersona):
         except Exception:
             return []
 
-    def _tamper_hidden_and_readonly(self, page: Page) -> List[str]:
+    def _tamper_hidden_and_readonly(self, page: Page) -> list[str]:
         """Detects and tampers with hidden or readonly inputs."""
         script = """
         () => {

@@ -2,7 +2,7 @@ import json
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import Any
 from playwright.sync_api import sync_playwright, Page, BrowserContext
 
 
@@ -12,7 +12,7 @@ class JourneyRecorder:
     def __init__(self, journeys_dir: str = ".loki/journeys"):
         self.journeys_dir = Path(journeys_dir)
         self.journeys_dir.mkdir(parents=True, exist_ok=True)
-        self.recorded_events: List[Dict[str, Any]] = []
+        self.recorded_events: list[dict[str, Any]] = []
 
     def _record_event(self, action_type: str, selector: str, value: str):
         """Callback invoked from browser JavaScript runtime to log user interactions."""
