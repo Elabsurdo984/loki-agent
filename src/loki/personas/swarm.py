@@ -2,12 +2,12 @@ import time
 import random
 from typing import Any
 from playwright.sync_api import Page
-from src.loki.engine.api_chaos import ApiChaosConfig
-from src.loki.personas.base import BasePersona
-from src.loki.personas.rage_clicker import RageClickerPersona
-from src.loki.personas.novice_chaotic import NoviceChaoticPersona
-from src.loki.personas.network_tormentor import NetworkTormentorPersona
-from src.loki.personas.adversary import AdversaryPersona
+from loki.engine.api_chaos import ApiChaosConfig
+from loki.personas.base import BasePersona
+from loki.personas.rage_clicker import RageClickerPersona
+from loki.personas.novice_chaotic import NoviceChaoticPersona
+from loki.personas.network_tormentor import NetworkTormentorPersona
+from loki.personas.adversary import AdversaryPersona
 
 
 class SwarmPersona(BasePersona):

@@ -3,9 +3,9 @@ from pathlib import Path
 from typing import Any
 import litellm
 litellm.suppress_debug_info = True
-from src.loki.engine.sandbox import IncidentReport
-from src.loki.engine.healer import CodeHealer
-from src.loki.config import is_ai_customized, resolve_ai_connection
+from loki.engine.sandbox import IncidentReport
+from loki.engine.healer import CodeHealer
+from loki.config import is_ai_customized, resolve_ai_connection
 
 
 class AIBrain:

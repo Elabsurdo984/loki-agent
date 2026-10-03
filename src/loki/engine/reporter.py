@@ -3,9 +3,9 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 from typing import Any
-from src.loki.engine.sandbox import IncidentReport
-from src.loki.engine.html_reporter import HTMLReporter
-from src.loki.engine.scrubber import NetworkScrubber
+from loki.engine.sandbox import IncidentReport
+from loki.engine.html_reporter import HTMLReporter
+from loki.engine.scrubber import NetworkScrubber
 
 
 class IncidentReporter:

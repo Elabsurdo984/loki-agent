@@ -13,31 +13,31 @@ if hasattr(sys.stdout, "reconfigure"):
         pass
 
 import webbrowser
-from src.loki import __version__
-from src.loki.config import load_loki_config, resolve_api_chaos_config
+from loki import __version__
+from loki.config import load_loki_config, resolve_api_chaos_config
 from rich.console import Console
 from rich.panel import Panel
 from rich.status import Status
 from rich.table import Table
 from rich.prompt import Confirm, Prompt
 from rich.syntax import Syntax
-from src.loki.engine.sandbox import ChaosSandbox
-from src.loki.engine.reporter import IncidentReporter
-from src.loki.engine.html_reporter import HTMLReporter
-from src.loki.engine.scanner import ProjectScanner
-from src.loki.personas.rage_clicker import RageClickerPersona
-from src.loki.personas.novice_chaotic import NoviceChaoticPersona
-from src.loki.personas.network_tormentor import NetworkTormentorPersona
-from src.loki.personas.adversary import AdversaryPersona
-from src.loki.personas.swarm import SwarmPersona
-from src.loki.ai.brain import AIBrain
-from src.loki.ai.chat import LokiChatSession
-from src.loki.engine.recorder import JourneyRecorder
-from src.loki.engine.replayer import IncidentReplayer
-from src.loki.engine.ci import CIGate
-from src.loki.engine.healer import CodeHealer
-from src.loki.engine import infra_chaos
-from src.loki.safety import (
+from loki.engine.sandbox import ChaosSandbox
+from loki.engine.reporter import IncidentReporter
+from loki.engine.html_reporter import HTMLReporter
+from loki.engine.scanner import ProjectScanner
+from loki.personas.rage_clicker import RageClickerPersona
+from loki.personas.novice_chaotic import NoviceChaoticPersona
+from loki.personas.network_tormentor import NetworkTormentorPersona
+from loki.personas.adversary import AdversaryPersona
+from loki.personas.swarm import SwarmPersona
+from loki.ai.brain import AIBrain
+from loki.ai.chat import LokiChatSession
+from loki.engine.recorder import JourneyRecorder
+from loki.engine.replayer import IncidentReplayer
+from loki.engine.ci import CIGate
+from loki.engine.healer import CodeHealer
+from loki.engine import infra_chaos
+from loki.safety import (
     authorize_host,
     extract_host,
     is_host_authorized,
@@ -279,7 +279,7 @@ def version(
     """Display the installed version of Loki."""
     console.print(f"[bold yellow]LOKI Agent[/bold yellow] version [bold green]{__version__}[/bold green]")
     if check:
-        from src.loki.engine.updater import check_for_updates, print_update_banner
+        from loki.engine.updater import check_for_updates, print_update_banner
         with Status("[bold yellow]Checking for updates on GitHub...[/bold yellow]", console=console):
             update_info = check_for_updates(force=True)
         if update_info and update_info.get("available"):
@@ -293,7 +293,7 @@ def update(
     force: bool = typer.Option(False, "--force", "-f", help="Force reinstall even if already on latest version"),
 ):
     """Check for and install LOKI updates using uv."""
-    from src.loki.engine.updater import check_for_updates, print_update_banner, perform_update
+    from loki.engine.updater import check_for_updates, print_update_banner, perform_update
 
     with Status("[bold yellow]Checking for updates on GitHub...[/bold yellow]", console=console):
         update_info = check_for_updates(force=True)
@@ -342,7 +342,7 @@ def init(
             f"  📜 [cyan]{paths['rules']}[/cyan] [dim](<Plain English business rules>)[/dim]\n"
             f"  🧬 [cyan]{paths['knowledge']}[/cyan] [dim](<Detected architectural fingerprint>)[/dim]\n\n"
             f"[bold yellow]Next Step:[/bold yellow] Edit [bold cyan].loki/rules.md[/bold cyan] to add your custom business constraints, "
-            f"or run [bold green]python -m src.loki.cli run {target_url}[/bold green] to launch an attack.",
+            f"or run [bold green]python -m loki.cli run {target_url}[/bold green] to launch an attack.",
             title="[bold green]🚀 Workspace Initialized[/bold green]",
             border_style="green",
         )
@@ -479,7 +479,7 @@ def run(
     resolved_url = url or (journey_data.get("start_url") if journey_data else None) or target_config.get("default_url")
     if not resolved_url:
         console.print("[bold red]Error:[/bold red] No target URL provided and no default found in .loki/config.yaml.")
-        console.print("Run [bold cyan]python -m src.loki.cli init[/bold cyan] first, or pass a URL: [bold green]loki run <url>[/bold green]")
+        console.print("Run [bold cyan]python -m loki.cli init[/bold cyan] first, or pass a URL: [bold green]loki run <url>[/bold green]")
         raise typer.Exit(code=1)
 
     ensure_target_authorized(resolved_url, authorized_flag=authorized)

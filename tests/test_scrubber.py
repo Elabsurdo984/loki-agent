@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import pytest
 
-from src.loki.engine.scrubber import NetworkScrubber
+from loki.engine.scrubber import NetworkScrubber
 
 
 class TestIsSensitiveKey:

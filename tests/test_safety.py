@@ -1,4 +1,4 @@
-﻿from src.loki.safety import (
+from loki.safety import (
     extract_host,
     is_local_host,
     is_host_authorized,
@@ -54,7 +54,7 @@ class TestSafetyIsLocalHost:
 class TestSafetyAuthorizationPersistence:
     def test_authorize_and_revoke_flow(self, tmp_path, monkeypatch):
         test_auth_file = tmp_path / "authorized_targets.json"
-        monkeypatch.setattr("src.loki.safety.AUTHORIZED_TARGETS_PATH", test_auth_file)
+        monkeypatch.setattr("loki.safety.AUTHORIZED_TARGETS_PATH", test_auth_file)
 
         target = "https://staging.internal.corp/app"
         host = "staging.internal.corp"

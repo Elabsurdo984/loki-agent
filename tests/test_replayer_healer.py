@@ -2,8 +2,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 import subprocess
 
-from src.loki.engine.replayer import IncidentReplayer
-from src.loki.engine.healer import CodeHealer
+from loki.engine.replayer import IncidentReplayer
+from loki.engine.healer import CodeHealer
 
 
 class TestIncidentReplayer:

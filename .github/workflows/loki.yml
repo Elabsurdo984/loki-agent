@@ -126,6 +126,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools
           pip install -r requirements.txt
+          pip install -e .
           playwright install --with-deps chromium
 
       - name: 🚀 Start local testbed web application
@@ -138,7 +139,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           CI: "true"
         run: |
-          python -m src.loki.cli run http://localhost:8000 --swarm --duration 6 --ci
+          python -m loki.cli run http://localhost:8000 --swarm --duration 6 --ci
 
       - name: 📦 Archive LOKI Incident Bundles & HTML Reports
         if: always()

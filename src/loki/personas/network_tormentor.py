@@ -2,8 +2,8 @@ import time
 import random
 from typing import Any
 from playwright.sync_api import Page
-from src.loki.personas.base import BasePersona
-from src.loki.engine.api_chaos import ApiChaosEngine, ApiChaosConfig
+from loki.personas.base import BasePersona
+from loki.engine.api_chaos import ApiChaosEngine, ApiChaosConfig
 
 
 class NetworkTormentorPersona(BasePersona):

@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from src.loki.engine.infra_chaos import (
+from loki.engine.infra_chaos import (
     _read_tracked_workers,
     _track_workers,
     _untrack_workers,
@@ -11,7 +11,7 @@ from src.loki.engine.infra_chaos import (
 def test_read_tracked_workers_mixed_malformed_data(tmp_path: Path, monkeypatch):
     """Verify that reading a tracking file with mixed or malformed data returns only positive integers."""
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     payload = [1234, "invalid", None, -5, "9999", 0, True, False, {"pid": 456}]
     tracking_file.parent.mkdir(parents=True, exist_ok=True)
@@ -24,7 +24,7 @@ def test_read_tracked_workers_mixed_malformed_data(tmp_path: Path, monkeypatch):
 def test_read_tracked_workers_non_list_payload(tmp_path: Path, monkeypatch):
     """Verify that non-list JSON objects return an empty list."""
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     tracking_file.parent.mkdir(parents=True, exist_ok=True)
     tracking_file.write_text(json.dumps({"pids": [1234]}), encoding="utf-8")
@@ -36,7 +36,7 @@ def test_read_tracked_workers_non_list_payload(tmp_path: Path, monkeypatch):
 def test_read_tracked_workers_corrupted_json(tmp_path: Path, monkeypatch):
     """Verify that corrupted JSON files gracefully return an empty list."""
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     tracking_file.parent.mkdir(parents=True, exist_ok=True)
     tracking_file.write_text("{not valid json", encoding="utf-8")
@@ -48,7 +48,7 @@ def test_read_tracked_workers_corrupted_json(tmp_path: Path, monkeypatch):
 def test_read_tracked_workers_missing_file(tmp_path: Path, monkeypatch):
     """Verify missing tracking file returns empty list."""
     tracking_file = tmp_path / "nonexistent.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     assert _read_tracked_workers() == []
 
@@ -56,7 +56,7 @@ def test_read_tracked_workers_missing_file(tmp_path: Path, monkeypatch):
 def test_cleanup_stress_workers_handles_malformed_json_gracefully(tmp_path: Path, monkeypatch):
     """Verify cleanup_stress_workers does not raise TypeError on malformed JSON contents."""
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     payload = ["invalid", None, -10, "broken"]
     tracking_file.parent.mkdir(parents=True, exist_ok=True)
@@ -73,7 +73,7 @@ def test_concurrent_track_workers_threads(tmp_path: Path, monkeypatch):
     import concurrent.futures
 
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     pids_to_track = [2000 + i for i in range(20)]
 
@@ -92,7 +92,7 @@ def test_concurrent_track_and_untrack_workers(tmp_path: Path, monkeypatch):
     import concurrent.futures
 
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     initial_pids = [3000 + i for i in range(10)]
     _track_workers(initial_pids)
@@ -118,7 +118,7 @@ def test_concurrent_track_and_untrack_workers(tmp_path: Path, monkeypatch):
 def test_track_workers_empty_list_noop(tmp_path: Path, monkeypatch):
     """Verify tracking empty PID list is a no-op."""
     tracking_file = tmp_path / "infra_stress_workers.json"
-    monkeypatch.setattr("src.loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
+    monkeypatch.setattr("loki.engine.infra_chaos._STRESS_WORKERS_TRACKING_PATH", tracking_file)
 
     _track_workers([])
     assert not tracking_file.exists()
@@ -129,7 +129,7 @@ def test_kill_process_partial_failure_does_not_mask_killed(monkeypatch):
     """Verify that if one process fails during kill, previously killed processes are reported and not masked."""
     from unittest.mock import MagicMock
     import psutil
-    from src.loki.engine import infra_chaos
+    from loki.engine import infra_chaos
 
     p1 = MagicMock(pid=1001)
     p1.name.return_value = "worker1.exe"
@@ -156,7 +156,7 @@ def test_kill_process_all_failed(monkeypatch):
     """Verify kill_process returns success=False when all targets fail."""
     from unittest.mock import MagicMock
     import psutil
-    from src.loki.engine import infra_chaos
+    from loki.engine import infra_chaos
 
     p1 = MagicMock(pid=1001)
     p1.name.return_value = "worker1.exe"
@@ -174,7 +174,7 @@ def test_kill_process_all_failed(monkeypatch):
 def test_pause_process_pauses_all_matching_processes(monkeypatch):
     """Verify pause_process suspends and resumes ALL matching processes on shared port."""
     from unittest.mock import MagicMock
-    from src.loki.engine import infra_chaos
+    from loki.engine import infra_chaos
 
     p1 = MagicMock(pid=2001)
     p1.name.return_value = "worker1.exe"
@@ -198,7 +198,7 @@ def test_pause_process_partial_suspend_failure(monkeypatch):
     """Verify pause_process resumes successful suspends even if another process fails to suspend."""
     from unittest.mock import MagicMock
     import psutil
-    from src.loki.engine import infra_chaos
+    from loki.engine import infra_chaos
 
     p1 = MagicMock(pid=2001)
     p1.name.return_value = "worker1.exe"

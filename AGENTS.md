@@ -83,42 +83,42 @@ All commands are executed via Python module syntax using the project virtual env
 $PYTHON = ".\.venv\Scripts\python.exe"
 
 # 1. Initialize workspace configuration & inspect tech stack
-&$PYTHON -m src.loki.cli init
+&$PYTHON -m loki.cli init
 
 # 2. Record interactive user workflow blueprint with masked secrets
-&$PYTHON -m src.loki.cli record --name checkout_flow
+&$PYTHON -m loki.cli record --name checkout_flow
 
 # 3. Execute chaotic testing
-&$PYTHON -m src.loki.cli run                                            # Standard unguided assault
-&$PYTHON -m src.loki.cli run --device iphone-15 --orientation portrait  # Mobile viewport & responsive audit
-&$PYTHON -m src.loki.cli run -m pixel-7 --orientation landscape         # Android tablet/mobile landscape
-&$PYTHON -m src.loki.cli run --swarm                                   # Orchestrate all 4 personas in waves
-&$PYTHON -m src.loki.cli run -c 3 --target-selector "#pay-button"      # N synchronized lanes probing for race conditions
-&$PYTHON -m src.loki.cli run --journey checkout_flow                   # Guided mutation assault
-&$PYTHON -m src.loki.cli run -p novice-chaotic --duration 5 --headed   # Visible browser execution
-&$PYTHON -m src.loki.cli run --open                                    # Auto-open HTML report dashboard
-&$PYTHON -m src.loki.cli run --no-rules                               # Skip AI rules evaluation
-&$PYTHON -m src.loki.cli run --auto-heal                              # Closed-loop auto-repair on crash
-&$PYTHON -m src.loki.cli run --ci                                      # Strict CI/CD quality gate (exit code 1)
+&$PYTHON -m loki.cli run                                            # Standard unguided assault
+&$PYTHON -m loki.cli run --device iphone-15 --orientation portrait  # Mobile viewport & responsive audit
+&$PYTHON -m loki.cli run -m pixel-7 --orientation landscape         # Android tablet/mobile landscape
+&$PYTHON -m loki.cli run --swarm                                   # Orchestrate all 4 personas in waves
+&$PYTHON -m loki.cli run -c 3 --target-selector "#pay-button"      # N synchronized lanes probing for race conditions
+&$PYTHON -m loki.cli run --journey checkout_flow                   # Guided mutation assault
+&$PYTHON -m loki.cli run -p novice-chaotic --duration 5 --headed   # Visible browser execution
+&$PYTHON -m loki.cli run --open                                    # Auto-open HTML report dashboard
+&$PYTHON -m loki.cli run --no-rules                               # Skip AI rules evaluation
+&$PYTHON -m loki.cli run --auto-heal                              # Closed-loop auto-repair on crash
+&$PYTHON -m loki.cli run --ci                                      # Strict CI/CD quality gate (exit code 1)
 
 # 4. Generate or inspect visual HTML report dashboard
-&$PYTHON -m src.loki.cli report
-&$PYTHON -m src.loki.cli report <run_id>
-&$PYTHON -m src.loki.cli report --no-open
+&$PYTHON -m loki.cli report
+&$PYTHON -m loki.cli report <run_id>
+&$PYTHON -m loki.cli report --no-open
 
 # 5. Autonomous diagnosis and surgical code repair
-&$PYTHON -m src.loki.cli fix                                           # Terminal diagnosis
-&$PYTHON -m src.loki.cli fix <run_id>                                  # Diagnose specific incident
-&$PYTHON -m src.loki.cli fix --apply                                   # Interactive patch, apply & verify
-&$PYTHON -m src.loki.cli fix -a --yes                                  # Non-interactive batch self-healing
+&$PYTHON -m loki.cli fix                                           # Terminal diagnosis
+&$PYTHON -m loki.cli fix <run_id>                                  # Diagnose specific incident
+&$PYTHON -m loki.cli fix --apply                                   # Interactive patch, apply & verify
+&$PYTHON -m loki.cli fix -a --yes                                  # Non-interactive batch self-healing
 
 # 6. Replay captured incident deterministically
-&$PYTHON -m src.loki.cli replay                                        # Replay repro_test.py
-&$PYTHON -m src.loki.cli replay --video                                # Launch recorded failure video
+&$PYTHON -m loki.cli replay                                        # Replay repro_test.py
+&$PYTHON -m loki.cli replay --video                                # Launch recorded failure video
 
 # 7. Conversational QA terminal REPL — the default screen (bare `loki` launches it too)
-&$PYTHON -m src.loki.cli chat
-&$PYTHON -m src.loki.cli chat --model gemini/gemini-3.5-flash-lite
+&$PYTHON -m loki.cli chat
+&$PYTHON -m loki.cli chat --model gemini/gemini-3.5-flash-lite
 # Inside chat: /model lists/switches/adds AI model profiles (.loki/models.json),
 # applied immediately to chat, rules evaluation, fix, and auto-heal alike.
 # Inside chat: /run, /fix, /report call the same run()/fix()/report() functions
@@ -126,17 +126,17 @@ $PYTHON = ".\.venv\Scripts\python.exe"
 # _run_cli_action) — no separate reimplementation to keep in sync.
 
 # 8. Infrastructure chaos — faults below the browser (src/loki/engine/infra_chaos.py)
-&$PYTHON -m src.loki.cli infra list                        # Find a --port/--pid to target
-&$PYTHON -m src.loki.cli infra kill --port 5432             # Crash whatever's listening there
-&$PYTHON -m src.loki.cli infra pause --port 5432 -d 10       # Hang it for 10s, then resume
-&$PYTHON -m src.loki.cli infra cpu-stress -d 5               # Saturate every core for 5s
-&$PYTHON -m src.loki.cli infra memory-stress -d 5 --mb 1024  # Hold 1GB resident for 5s
+&$PYTHON -m loki.cli infra list                        # Find a --port/--pid to target
+&$PYTHON -m loki.cli infra kill --port 5432             # Crash whatever's listening there
+&$PYTHON -m loki.cli infra pause --port 5432 -d 10       # Hang it for 10s, then resume
+&$PYTHON -m loki.cli infra cpu-stress -d 5               # Saturate every core for 5s
+&$PYTHON -m loki.cli infra memory-stress -d 5 --mb 1024  # Hold 1GB resident for 5s
 # --container <name> on kill/pause targets a local Docker container instead of a process.
 # Scoped to the local machine only (no remote/SSH/cloud backend) — see safety note below.
 
 # 9. Self-update and version management (src/loki/engine/updater.py)
-&$PYTHON -m src.loki.cli version --check                   # Check if newer release exists on GitHub
-&$PYTHON -m src.loki.cli update                            # Check and upgrade via uv
+&$PYTHON -m loki.cli version --check                   # Check if newer release exists on GitHub
+&$PYTHON -m loki.cli update                            # Check and upgrade via uv
 # Inside chat: /update checks GitHub releases and upgrades directly with user confirmation.
 ```
 
@@ -145,7 +145,7 @@ $PYTHON = ".\.venv\Scripts\python.exe"
 ## 7. Pre-Commit Quality Checklist
 
 Before running `git commit`, every agent MUST verify:
-1. `python -m src.loki.cli --help` exits with code 0.
+1. `python -m loki.cli --help` exits with code 0.
 2. If touching sandbox or personas: run against local target (`http://localhost:8000`) and ensure no CLI crash.
 3. If touching AI brain: verify graceful fallback when API keys are absent (`SKIPPED` status).
 4. No temp files, `.loki.bak` backups, or `.loki/runs/` staged in Git.

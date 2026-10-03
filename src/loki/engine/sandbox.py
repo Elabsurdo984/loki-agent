@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from playwright.sync_api import sync_playwright, Page, Response, Error
-from src.loki.personas.base import BasePersona
+from loki.personas.base import BasePersona
 
 
 @dataclass

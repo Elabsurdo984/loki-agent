@@ -8,8 +8,8 @@ from typing import Any
 import litellm
 litellm.suppress_debug_info = True
 
-from src.loki.engine.replayer import IncidentReplayer
-from src.loki.config import is_ai_customized, resolve_ai_connection
+from loki.engine.replayer import IncidentReplayer
+from loki.config import is_ai_customized, resolve_ai_connection
 
 
 class CodeHealer:

@@ -1,7 +1,7 @@
 import json
 from unittest.mock import MagicMock
 
-from src.loki.engine.api_chaos import (
+from loki.engine.api_chaos import (
     ApiChaosConfig,
     ApiChaosEngine,
     ApiFaultEvent,
@@ -257,7 +257,7 @@ class TestSummaryAndRepro:
 
 class TestPersonaIntegration:
     def test_network_tormentor_has_api_chaos(self):
-        from src.loki.personas.network_tormentor import NetworkTormentorPersona
+        from loki.personas.network_tormentor import NetworkTormentorPersona
 
         persona = NetworkTormentorPersona()
         assert hasattr(persona, "api_chaos")
@@ -265,7 +265,7 @@ class TestPersonaIntegration:
         assert isinstance(persona.get_api_faults(), list)
 
     def test_swarm_exposes_api_faults(self):
-        from src.loki.personas.swarm import SwarmPersona
+        from loki.personas.swarm import SwarmPersona
 
         swarm = SwarmPersona()
         assert hasattr(swarm, "get_api_faults")
@@ -274,8 +274,8 @@ class TestPersonaIntegration:
 
 class TestReporterReproIntegration:
     def test_repro_script_contains_api_faults(self):
-        from src.loki.engine.sandbox import IncidentReport
-        from src.loki.engine.reporter import IncidentReporter
+        from loki.engine.sandbox import IncidentReport
+        from loki.engine.reporter import IncidentReporter
 
         report = IncidentReport(
             target_url="http://localhost:8080",
@@ -298,8 +298,8 @@ class TestReporterReproIntegration:
         assert "deterministic API mock routes" in code
 
     def test_save_session_persists_api_faults(self, tmp_path):
-        from src.loki.engine.sandbox import IncidentReport
-        from src.loki.engine.reporter import IncidentReporter
+        from loki.engine.sandbox import IncidentReport
+        from loki.engine.reporter import IncidentReporter
 
         report = IncidentReport(
             target_url="http://localhost:8080",
@@ -460,9 +460,9 @@ class TestAuthChaos:
 
 class TestCliAndConfigIntegration:
     def test_resolve_api_chaos_config_defaults(self, monkeypatch):
-        from src.loki.config import resolve_api_chaos_config
+        from loki.config import resolve_api_chaos_config
 
-        monkeypatch.setattr("src.loki.config.load_loki_config", lambda: {})
+        monkeypatch.setattr("loki.config.load_loki_config", lambda: {})
         cfg = resolve_api_chaos_config()
         assert cfg.enabled is True
         assert cfg.fault_rate == 0.3
@@ -484,10 +484,10 @@ class TestCliAndConfigIntegration:
         ]
 
     def test_resolve_api_chaos_config_yaml_overlay(self, monkeypatch):
-        from src.loki.config import resolve_api_chaos_config
+        from loki.config import resolve_api_chaos_config
 
         monkeypatch.setattr(
-            "src.loki.config.load_loki_config",
+            "loki.config.load_loki_config",
             lambda: {
                 "api_chaos": {
                     "enabled": False,
@@ -519,10 +519,10 @@ class TestCliAndConfigIntegration:
         assert cfg.monster_string_len == 8000
 
     def test_resolve_api_chaos_config_cli_precedence(self, monkeypatch):
-        from src.loki.config import resolve_api_chaos_config
+        from loki.config import resolve_api_chaos_config
 
         monkeypatch.setattr(
-            "src.loki.config.load_loki_config",
+            "loki.config.load_loki_config",
             lambda: {
                 "api_chaos": {
                     "enabled": False,
@@ -544,7 +544,7 @@ class TestCliAndConfigIntegration:
         assert cfg.auth_fault_rate == 0.95
 
     def test_swarm_accepts_api_chaos_config(self):
-        from src.loki.personas.swarm import SwarmPersona
+        from loki.personas.swarm import SwarmPersona
 
         custom_cfg = ApiChaosConfig(fault_rate=0.99, auth_chaos_enabled=False)
         swarm = SwarmPersona(api_chaos_config=custom_cfg)
@@ -552,7 +552,7 @@ class TestCliAndConfigIntegration:
         assert swarm.network.api_chaos.config.auth_chaos_enabled is False
 
     def test_chat_handle_run_command_api_chaos_flags(self, monkeypatch):
-        from src.loki.ai.chat import LokiChatSession
+        from loki.ai.chat import LokiChatSession
 
         captured = {}
 
@@ -570,7 +570,7 @@ class TestCliAndConfigIntegration:
 
 class TestHtmlTelemetryAndAiDiagnosis:
     def test_html_reporter_with_api_faults(self, tmp_path):
-        from src.loki.engine.html_reporter import HTMLReporter
+        from loki.engine.html_reporter import HTMLReporter
 
         report_data = {
             "run_id": "run_test_api_chaos",
@@ -608,7 +608,7 @@ class TestHtmlTelemetryAndAiDiagnosis:
         assert "UI Resilience Verified" in content
 
     def test_html_reporter_with_ui_freeze_anomaly(self, tmp_path):
-        from src.loki.engine.html_reporter import HTMLReporter
+        from loki.engine.html_reporter import HTMLReporter
 
         report_data = {
             "run_id": "run_test_freeze",
@@ -639,7 +639,7 @@ class TestHtmlTelemetryAndAiDiagnosis:
 
     def test_ai_brain_prompt_includes_api_chaos_context(self, tmp_path, monkeypatch):
         import json
-        from src.loki.ai.brain import AIBrain
+        from loki.ai.brain import AIBrain
 
         run_dir = tmp_path / "run_20261002_test"
         run_dir.mkdir(parents=True)
@@ -694,7 +694,7 @@ class TestHtmlTelemetryAndAiDiagnosis:
 
     def test_code_healer_prompt_includes_api_context(self, tmp_path, monkeypatch):
         import json
-        from src.loki.engine.healer import CodeHealer
+        from loki.engine.healer import CodeHealer
 
         dummy_src = tmp_path / "checkout.js"
         dummy_src.write_text("function checkout() { fetch('/api/pay'); }", encoding="utf-8")
@@ -764,7 +764,7 @@ class TestApiChaosRouteFetchFailsafe:
         route.fetch.return_value = mock_response
 
         # Force an exception during mutation
-        monkeypatch.setattr("src.loki.engine.api_chaos.mutate_json_payload", MagicMock(side_effect=RuntimeError("Mutation bomb")))
+        monkeypatch.setattr("loki.engine.api_chaos.mutate_json_payload", MagicMock(side_effect=RuntimeError("Mutation bomb")))
 
         request = MagicMock()
         request.url = "https://example.com/api/test"
@@ -830,7 +830,7 @@ class TestApiChaosRouteFetchFailsafe:
         route.fetch.return_value = mock_response
 
         # Force an exception during strip_schema_keys
-        monkeypatch.setattr("src.loki.engine.api_chaos.strip_schema_keys", MagicMock(side_effect=RuntimeError("Strip error")))
+        monkeypatch.setattr("loki.engine.api_chaos.strip_schema_keys", MagicMock(side_effect=RuntimeError("Strip error")))
 
         request = MagicMock()
         request.url = "https://example.com/api/test"

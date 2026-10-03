@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import pytest
 
-from src.loki.engine.scanner import ProjectScanner
+from loki.engine.scanner import ProjectScanner
 
 
 class TestProjectScannerDockerDetection:

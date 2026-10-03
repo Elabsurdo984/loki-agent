@@ -15,7 +15,7 @@ Note: You do NOT need an existing issue to submit a PR! Direct improvements, fea
 <!-- If this PR fixes or relates to an open issue, reference it here (e.g. Fixes #12). Otherwise, leave blank or describe the motivation. -->
 
 ## Checklist
-- [ ] `python -m src.loki.cli --help` exits with code 0.
+- [ ] `python -m loki.cli --help` exits with code 0.
 - [ ] `python -m pytest` passes with 100% green status.
 - [ ] New code includes corresponding unit test coverage in `tests/`.
 - [ ] Code follows project standards: 100% English, type annotations, and UTF-8 encoding.

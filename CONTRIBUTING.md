@@ -30,14 +30,14 @@ playwright install chromium
 Verify it works:
 
 ```bash
-python -m src.loki.cli --help
-python -m src.loki.cli init
+python -m loki.cli --help
+python -m loki.cli init
 
 # in one terminal: serve the bundled testbed app
 python -m http.server 8000 --directory playground
 
 # in another: attack it
-python -m src.loki.cli run http://localhost:8000 --swarm --duration 5 --no-rules
+python -m loki.cli run http://localhost:8000 --swarm --duration 5 --no-rules
 ```
 
 AI-powered features (`loki fix`, business rules evaluation, `/model` in chat) are optional and gracefully degrade without an API key — you don't need one to work on most of the codebase. If you do want to test the AI paths, LOKI works with any LiteLLM-compatible provider, including a local Ollama with no key at all — see the README's "Configure AI Brain" section.
@@ -61,7 +61,7 @@ Follow [Conventional Commits](https://www.conventionalcommits.org/): `feat: ...`
 
 ## Before opening a PR
 
-- [ ] `python -m src.loki.cli --help` exits 0.
+- [ ] `python -m loki.cli --help` exits 0.
 - [ ] If you touched the sandbox, personas, or the healer: run it against a real local target (`playground/index.html` works well) and confirm nothing crashes.
 - [ ] If you touched the AI brain: confirm it still degrades gracefully with no API key configured (you should see a `SKIPPED`/local-diagnosis fallback, not a crash).
 - [ ] No `.loki/runs/`, `*.loki.bak` backup files, or stray `.loki/models.json` test artifacts staged in git (`git status` before committing).

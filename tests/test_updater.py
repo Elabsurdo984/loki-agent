@@ -2,8 +2,8 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
-from src.loki.ai import chat
-from src.loki.engine import updater
+from loki.ai import chat
+from loki.engine import updater
 
 
 def test_parse_version():

@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 import yaml
 
-from src.loki.config import (
+from loki.config import (
     DEFAULT_MODEL,
     activate_model_profile,
     add_model_profile,

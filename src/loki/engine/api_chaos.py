@@ -18,7 +18,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from playwright.sync_api import BrowserContext, Page, Request, Route
-from src.loki.engine.scrubber import NetworkScrubber
+from loki.engine.scrubber import NetworkScrubber
 
 
 @dataclass

@@ -8,8 +8,8 @@ import typer
 import litellm
 litellm.suppress_debug_info = True
 
-from src.loki import __version__
-from src.loki.config import (
+from loki import __version__
+from loki.config import (
     activate_model_profile,
     add_model_profile,
     clear_active_model_profile,
@@ -21,7 +21,7 @@ from src.loki.config import (
     resolve_ai_connection,
     resolve_model,
 )
-from src.loki.engine.updater import check_for_updates, print_update_banner, perform_update
+from loki.engine.updater import check_for_updates, print_update_banner, perform_update
 
 from rich.console import Console
 from rich.panel import Panel
@@ -316,7 +316,7 @@ class LokiChatSession:
     def _handle_run_command(self, args: str):
         """Parses `/run [url] [flags]` and launches a real chaos session via the same
         `run()` used by `loki run`, without leaving the chat."""
-        from src.loki.cli import PersonaChoice, run as cli_run
+        from loki.cli import PersonaChoice, run as cli_run
 
         tokens = args.split()
         url = None
@@ -444,7 +444,7 @@ class LokiChatSession:
 
     def _handle_fix_command(self, args: str):
         """Parses `/fix [run_id] [flags]` and runs the same diagnosis/patch flow as `loki fix`."""
-        from src.loki.cli import fix as cli_fix
+        from loki.cli import fix as cli_fix
 
         tokens = args.split()
         run_id = None
@@ -480,7 +480,7 @@ class LokiChatSession:
     def _handle_report_command(self, args: str):
         """Parses `/report [run_id] [--no-open]` and opens/generates the HTML report,
         same as `loki report`."""
-        from src.loki.cli import report as cli_report
+        from loki.cli import report as cli_report
 
         tokens = args.split()
         run_id = None

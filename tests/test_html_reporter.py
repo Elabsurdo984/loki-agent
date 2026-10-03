@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from src.loki.engine.html_reporter import HTMLReporter
+from loki.engine.html_reporter import HTMLReporter
 
 
 def test_html_reporter_rule_evaluation_none_status(tmp_path: Path):

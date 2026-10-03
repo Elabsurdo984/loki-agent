@@ -1,4 +1,4 @@
-from src.loki.ai import chat
+from loki.ai import chat
 
 
 def test_failed_chat_completion_does_not_keep_orphan_user_turn(monkeypatch):
@@ -85,7 +85,7 @@ def test_chat_repl_survives_cli_action_system_exit(monkeypatch):
     monkeypatch.setattr(chat, "check_for_updates", lambda: None)
 
     # Mock the underlying run function to call sys.exit(1)
-    from src.loki import cli
+    from loki import cli
 
     def crashing_run(**kwargs):
         sys.exit(1)

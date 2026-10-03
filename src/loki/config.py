@@ -237,7 +237,7 @@ def resolve_api_chaos_config(
     Builds an ApiChaosConfig by overlaying CLI arguments on top of .loki/config.yaml
     `api_chaos:` section and sensible defaults.
     """
-    from src.loki.engine.api_chaos import ApiChaosConfig
+    from loki.engine.api_chaos import ApiChaosConfig
 
     yaml_cfg = load_loki_config().get("api_chaos") or {}
 

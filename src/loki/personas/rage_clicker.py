@@ -1,6 +1,6 @@
 import time
 from playwright.sync_api import Page, TimeoutError
-from src.loki.personas.base import BasePersona
+from loki.personas.base import BasePersona
 
 
 class RageClickerPersona(BasePersona):

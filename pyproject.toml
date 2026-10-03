@@ -55,19 +55,19 @@ dev = [
 ]
 
 [project.scripts]
-loki = "src.loki.cli:app"
+loki = "loki.cli:app"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "src"]
 
 
 [tool.setuptools.dynamic]
-version = { attr = "src.loki.__version__" }
+version = { attr = "loki.__version__" }
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["src*"]
+where = ["src"]
+include = ["loki*"]
 
 [tool.ruff]
 line-length = 120

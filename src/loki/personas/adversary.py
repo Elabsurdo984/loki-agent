@@ -1,7 +1,7 @@
 import time
 import random
 from playwright.sync_api import Page
-from src.loki.personas.base import BasePersona
+from loki.personas.base import BasePersona
 
 
 class AdversaryPersona(BasePersona):

@@ -1,10 +1,12 @@
 import sys
 import os
 
-# Ensure the application root is always importable
-sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
+# Ensure src and application root are always importable
+repo_dir = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(repo_dir, "src"))
+sys.path.insert(0, repo_dir)
 
-from src.loki.cli import app
+from loki.cli import app
 
 if __name__ == "__main__":
     app()

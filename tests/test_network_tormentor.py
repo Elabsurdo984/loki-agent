@@ -1,5 +1,5 @@
 from unittest.mock import MagicMock, call
-from src.loki.personas.network_tormentor import NetworkTormentorPersona
+from loki.personas.network_tormentor import NetworkTormentorPersona
 
 
 class TestNetworkTormentor:

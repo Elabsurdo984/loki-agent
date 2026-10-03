@@ -11,20 +11,20 @@ Use this skill whenever executing, debugging, or analyzing chaotic test sessions
 
 ```powershell
 # 1. Standard unguided assault on default target
-python -m src.loki.cli run
+python -m loki.cli run
 
 # 2. Emulate mobile device (iPhone 15, Pixel 7) & audit layout
-python -m src.loki.cli run --device iphone-15 --orientation portrait
-python -m src.loki.cli run -m pixel-7 --orientation landscape
+python -m loki.cli run --device iphone-15 --orientation portrait
+python -m loki.cli run -m pixel-7 --orientation landscape
 
 # 3. Multi-vector Swarm assault with HTML report auto-open
-python -m src.loki.cli run --swarm --duration 6 --open
+python -m loki.cli run --swarm --duration 6 --open
 
 # 4. Attack a recorded user journey
-python -m src.loki.cli run --journey checkout_flow -p novice-chaotic --headed
+python -m loki.cli run --journey checkout_flow -p novice-chaotic --headed
 
 # 5. Strict CI/CD quality gate enforcement
-python -m src.loki.cli run --ci
+python -m loki.cli run --ci
 ```
 
 ## 2. In-Depth Technical References

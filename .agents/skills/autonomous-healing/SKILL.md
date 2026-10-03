@@ -11,16 +11,16 @@ Use this skill whenever diagnosing captured crashes, synthesizing surgical code 
 
 ```powershell
 # 1. Diagnose latest crash and output explanation in terminal
-python -m src.loki.cli fix
+python -m loki.cli fix
 
 # 2. Interactive self-healing: review synthesized patch, apply, and verify
-python -m src.loki.cli fix --apply
+python -m loki.cli fix --apply
 
 # 3. Non-interactive autonomous healing (CI/CD or batch mode)
-python -m src.loki.cli fix -a --yes
+python -m loki.cli fix -a --yes
 
 # 4. End-to-end chaos attack with autonomous self-healing on failure
-python -m src.loki.cli run --auto-heal
+python -m loki.cli run --auto-heal
 ```
 
 ## 2. The 6-Stage Healing Lifecycle

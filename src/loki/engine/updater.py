@@ -18,7 +18,7 @@ if hasattr(sys.stdout, "reconfigure"):
 
 from rich.console import Console
 from rich.panel import Panel
-from src.loki import __version__
+from loki import __version__
 
 GITHUB_REPO = "Elabsurdo984/loki-agent"
 CACHE_FILE = Path(".loki/.update_cache.json")
